@@ -6,63 +6,60 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Endpoint for FoxyCart to call
-app.post('/shipping', function (request, response) {
-  console.log("Received shipping request with body:", request.body); 
+app.post('/shipping', function(request, response) {
+  console.log("Received shipping request with body:", request.body);
 
   try {
     const cart_details = request.body;
-    const shippingCity = cart_details._embedded['fx:shipment'].shipping_address.city;
 
-    if (shippingCity.toLowerCase() === 'bogotá') {
-      // Calculate shipping rates for Bogotá (replace with your actual logic)
-      const totalWeight = cart_details._embedded['fx:shipment'].total_weight;
-      const totalAmount = cart_details._embedded['fx:shipment'].total_item_price;
+    // Access shipping address from _embedded['fx:shipment']
+    const shippingAddress = cart_details?._embedded?.['fx:shipment']?.shipping_address;
 
-      let standardRate = 8000; // Base rate
-      let priorityRate = 12000; // Base rate
+    // Check if shippingAddress and city exist
+    if (shippingAddress && shippingAddress.city) {
+      const normalizedCity = shippingAddress.city.toLowerCase()
+                              .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                              .replace(/[^a-z]/g, '');
 
-      // Example: Adjust rates based on weight (customize this logic)
-      if (totalWeight > 5) {
-        standardRate += 2000;
-        priorityRate += 3000;
+      if (normalizedCity.includes('bogota')) {
+        // Fixed shipping rates for Bogotá
+        const shipping_results = [
+          {
+            method: "Envío Bogotá",
+            price: 8000,
+            service_id: 10001,
+            service_name: "Envío Bogotá (24 – 48 Horas)",
+          },
+          {
+            method: "Envío Prioritario Bogotá",
+            price: 12000,
+            service_id: 10002,
+            service_name: "Envío Prioritario Bogotá (3-4 horas)",
+          },
+        ];
+
+        console.log("Shipping rates output:", JSON.stringify(shipping_results, null, 2));
+        response.setHeader("Content-Type", "application/json");
+        response.send({ ok: true, data: { shipping_results } }); // Wrap in { ok: true, data: { ... } }
+      } else {
+        // Handle cases where the city is not Bogotá
+        console.log("Shipping not available for:", shippingCity);
+        response.setHeader("Content-Type", "application/json");
+        response.send({ ok: false, error: "No procesamos envios a esta ciudad." });
       }
-
-      // Example: Adjust rates based on total amount (customize this logic)
-      if (totalAmount > 100000) {
-        priorityRate -= 1000; // Discount for larger orders
-      }
-
-      const shipping_results = [
-        {
-          method: "Envío Bogotá",
-          price: standardRate,
-          service_id: 10001,
-          service_name: "Envío Bogotá (24 – 48 Horas)",
-        },
-        {
-          method: "Envío Prioritario Bogotá",
-          price: priorityRate,
-          service_id: 10002,
-          service_name: "Envío Prioritario Bogotá (3-4 horas)",
-        },
-      ];
-
-      console.log("Shipping rates output:", JSON.stringify(shipping_results, null, 2));
-      response.setHeader("Content-Type", "application/json");
-      response.send({ ok: true, data: { shipping_results } });
     } else {
-      // Handle cases where the city is not Bogotá
-      console.log("Shipping not available for:", shippingCity);
+      // Handle cases where shippingAddress or city is missing
+      console.error("Error: Shipping address or city is missing in the payload.");
       response.setHeader("Content-Type", "application/json");
-      response.send({ ok: false, error: "Envío disponible solo para Bogotá." });
+      response.send({ ok: false, error: "No procesamos envios a esta ciudad." });
     }
   } catch (error) {
     console.error("Error during shipping rate setup:", error);
-    response.status(500).send("Error procesando el requerimiento");
+    response.status(500).send("Error processing request");
   }
 });
 
-// Start the server (Heroku-friendly port configuration)
+// Start the server
 const PORT = process.env.PORT || 6000; 
 app.listen(PORT, function () {
   console.log(`Custom FoxyCart shipping server running on port ${PORT}`);
