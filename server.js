@@ -9,11 +9,11 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const bogota = ['Bogotá'];
 const nearBogota = ['Chía', 'Soacha', 'Zipaquirá', 'Mosquera'];
 const otherRegions = [
-    'Amazonas', 'Antioquia', 'Arauca', 'Atlántico', 'Bolívar', 'Boyacá', 'Caldas',
-    'Caquetá', 'Casanare', 'Cauca', 'Cesar', 'Chocó', 'Córdoba', 'Guainía', 'Guaviare',
-    'Huila', 'La Guajira', 'Magdalena', 'Meta', 'Nariño', 'Norte de Santander', 'Putumayo',
-    'Quindío', 'Risaralda', 'San Andrés y Providencia', 'Santander', 'Sucre', 'Tolima',
-    'Valle del Cauca', 'Vaupés', 'Vichada'
+  'amazonas', 'antioquia', 'arauca', 'atlántico', 'bolívar', 'boyacá', 'caldas',
+  'caquetá', 'casanare', 'cauca', 'cesar', 'chocó', 'córdoba', 'guainía', 'guaviare',
+  'huila', 'la guajira', 'magdalena', 'meta', 'nariño', 'norte de santander', 'putumayo',
+  'quindío', 'risaralda', 'san andrés y providencia', 'santander', 'sucre', 'tolima',
+  'valle del cauca', 'vaupés', 'vichada'
 ];
 
 app.post('/shipping', (request, response) => {
