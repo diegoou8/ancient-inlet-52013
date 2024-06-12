@@ -9,11 +9,22 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const citiesBogotaAndNearby = ['Bogotá', 'Chía', 'Soacha', 'Zipaquirá', 'Mosquera'];
 
 app.post('/shipping', function (request, response) {
-  console.log("Received shipping request with body:", request.body);
+  // Log the full request body to see the complete structure
+  console.log("Full request body:", JSON.stringify(request.body, null, 2));
 
   try {
-    // Correctly extracting the city from the nested JSON structure
-    const city = request.body['_embedded']['fx:shipment']['shipping_address']['city'];
+    // Use optional chaining to safely access nested properties
+    const city = request.body['_embedded']?.['fx:shipment']?.['shipping_address']?.city;
+
+    // Log the specific fields being accessed
+    console.log("City retrieved:", city);
+
+    // Check if the city value is defined
+    if (!city) {
+      console.error("City is undefined, could not process the request, full body:", JSON.stringify(request.body, null, 2));
+      response.status(400).send("City information is missing in the request.");
+      return;
+    }
 
     let shipping_results = [];
     if (citiesBogotaAndNearby.includes(city)) {
@@ -27,9 +38,10 @@ app.post('/shipping', function (request, response) {
 
       // Get the current hour
       const currentHour = new Date().getHours();
+      console.log("Current hour:", currentHour);
 
       // Add "Envío Prioritario Bogotá" only if current hour is between 6 AM and 6 PM
-      if (currentHour >= 15 && currentHour <= 7) {
+      if (currentHour >= 6 && currentHour <= 18) {
         shipping_results.push({
           method: "Envío Prioritario Bogotá",
           price: 12000,
