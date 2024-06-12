@@ -5,15 +5,15 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Shipping Groups
+// Shipping Groups (Make sure to add all relevant Colombian states)
 const bogota = ['Bogotá'];
 const nearBogota = ['Chía', 'Soacha', 'Zipaquirá', 'Mosquera'];
 const otherRegions = [
-  'amazonas', 'antioquia', 'arauca', 'atlántico', 'bolívar', 'boyacá', 'caldas',
-  'caquetá', 'casanare', 'cauca', 'cesar', 'chocó', 'córdoba', 'guainía', 'guaviare',
-  'huila', 'la guajira', 'magdalena', 'meta', 'nariño', 'norte de santander', 'putumayo',
-  'quindío', 'risaralda', 'san andrés y providencia', 'santander', 'sucre', 'tolima',
-  'valle del cauca', 'vaupés', 'vichada'
+  'amazonas', 'antioquia', 'arauca', 'atlántico', 'bolívar', 'boyacá', 'caldas',
+  'caquetá', 'casanare', 'cauca', 'cesar', 'chocó', 'córdoba', 'guainía', 'guaviare',
+  'huila', 'la guajira', 'magdalena', 'meta', 'nariño', 'norte de santander', 'putumayo',
+  'quindío', 'risaralda', 'san andrés y providencia', 'santander', 'sucre', 'tolima',
+  'valle del cauca', 'vaupés', 'vichada'
 ];
 
 app.post('/shipping', (request, response) => {
@@ -21,12 +21,11 @@ app.post('/shipping', (request, response) => {
 
     try {
         const shipment = request.body._embedded['fx:shipment'];
+        const shipping_results = [];  // Declare shipping_results outside the conditional blocks
 
         // Priority for city (Bogota and nearby cities)
         let city = shipment?.city?.toLowerCase();
         if (bogota.includes(city) || nearBogota.includes(city)) {
-            const shipping_results = [];
-
             // Bogotá shipping
             if (bogota.includes(city)) {
                 shipping_results.push({
@@ -61,38 +60,33 @@ app.post('/shipping', (request, response) => {
             if (shipping_results.length === 0) {
                 return response.send({ ok: false, message: "Shipping not available for your location" });
             }
-            
-            response.setHeader("Content-Type", "application/json");
-            return response.send({ ok: true, data: { shipping_results } }); // Exit early if city is found
-        }
+        } 
 
         // If city not in Bogotá or nearby, check the region
-        const region = shipment?.region?.toLowerCase();
+        else {  
+            const region = shipment?.region?.toLowerCase();
 
-        if (!region) {
-            return response.status(400).send("Region/State information is missing in the request.");
+            if (!region) {
+                return response.status(400).send("Region/State information is missing in the request.");
+            }
+
+            // Other states shipping
+            if (otherRegions.includes(region)) { 
+                shipping_results.push({
+                    method: "Envíos fuera de Bogotá",
+                    price: 39000,
+                    service_id: 10004,
+                    service_name: "Envíos fuera de Bogotá (48-72 hrs)"
+                });
+            }
         }
 
-        const shipping_results = [];
-
-        // Other states shipping
-        if (otherRegions.map(r => r.toLowerCase()).includes(region)) {
-            shipping_results.push({
-                method: "Envíos fuera de Bogotá",
-                price: 39000,
-                service_id: 10004,
-                service_name: "Envíos fuera de Bogotá (48-72 hrs)"
-            });
-        }
-
-        // No shipping available
+        // Check if any shipping options were found (moved outside of if-else blocks)
         if (shipping_results.length === 0) {
             return response.send({ ok: false, message: "Shipping not available for your location" });
-        }
-        
+        }        
         response.setHeader("Content-Type", "application/json");
         response.send({ ok: true, data: { shipping_results } });
-
     } catch (error) {
         console.error("Error during shipping rate setup:", error);
         response.status(500).send("Error processing request");
