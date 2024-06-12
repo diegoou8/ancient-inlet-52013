@@ -5,15 +5,15 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Shipping Groups (Make sure to add all relevant Colombian states)
-const bogota = ['Bogotá'];
+// Shipping Groups 
+const bogota = ['Bogotá', 'Bogotá, D.C.']; 
 const nearBogota = ['Chía', 'Soacha', 'Zipaquirá', 'Mosquera'];
 const otherRegions = [
-  'amazonas', 'antioquia', 'arauca', 'atlántico', 'bolívar', 'boyacá', 'caldas',
-  'caquetá', 'casanare', 'cauca', 'cesar', 'chocó', 'córdoba', 'guainía', 'guaviare',
-  'huila', 'la guajira', 'magdalena', 'meta', 'nariño', 'norte de santander', 'putumayo',
-  'quindío', 'risaralda', 'san andrés y providencia', 'santander', 'sucre', 'tolima',
-  'valle del cauca', 'vaupés', 'vichada'
+    'amazonas', 'antioquia', 'arauca', 'atlántico', 'bolívar', 'boyacá', 'caldas',
+    'caquetá', 'casanare', 'cauca', 'cesar', 'chocó', 'córdoba', 'guainía', 'guaviare',
+    'huila', 'la guajira', 'magdalena', 'meta', 'nariño', 'norte de santander', 'putumayo',
+    'quindío', 'risaralda', 'san andrés y providencia', 'santander', 'sucre', 'tolima',
+    'valle del cauca', 'vaupés', 'vichada'
 ];
 
 app.post('/shipping', (request, response) => {
@@ -21,10 +21,11 @@ app.post('/shipping', (request, response) => {
 
     try {
         const shipment = request.body._embedded['fx:shipment'];
-        const shipping_results = [];  // Declare shipping_results outside the conditional blocks
+        const shipping_results = []; // Declare shipping_results outside the conditional blocks
 
         // Priority for city (Bogota and nearby cities)
         let city = shipment?.city?.toLowerCase();
+
         if (bogota.includes(city) || nearBogota.includes(city)) {
             // Bogotá shipping
             if (bogota.includes(city)) {
@@ -54,16 +55,11 @@ app.post('/shipping', (request, response) => {
                     service_id: 10003,
                     service_name: "Envío Municipios Cerca a Bogotá (24-48 hrs)"
                 });
-            }
-
-            // No shipping available (city not found)
-            if (shipping_results.length === 0) {
-                return response.send({ ok: false, message: "Shipping not available for your location" });
-            }
-        } 
+            } 
+        }
 
         // If city not in Bogotá or nearby, check the region
-        else {  
+        else {
             const region = shipment?.region?.toLowerCase();
 
             if (!region) {
@@ -79,7 +75,7 @@ app.post('/shipping', (request, response) => {
                     service_name: "Envíos fuera de Bogotá (48-72 hrs)"
                 });
             }
-        }
+        }  
 
         // Check if any shipping options were found (moved outside of if-else blocks)
         if (shipping_results.length === 0) {
@@ -92,9 +88,7 @@ app.post('/shipping', (request, response) => {
         response.status(500).send("Error processing request");
     }
 });
-
-
 const PORT = process.env.PORT || 6000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
