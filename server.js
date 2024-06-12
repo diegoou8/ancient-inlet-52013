@@ -15,9 +15,9 @@ app.post('/shipping', function (request, response) {
     console.log("Embedded:", request.body['_embedded']);
     const shipment = request.body['_embedded']?.['fx:shipment'];
     console.log("Shipment:", shipment);
-    const shippingAddress = shipment?.['shipping_address'];
-    console.log("Shipping Address:", shippingAddress);
-    const city = shippingAddress?.city;
+    
+    // Based on your logs, `city` might be directly under `shipment`
+    const city = shipment?.city;
     console.log("City:", city);
 
     if (!city) {
