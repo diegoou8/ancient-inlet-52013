@@ -9,19 +9,22 @@ app.use(bodyParser.urlencoded({ extended: true }));
 const citiesBogotaAndNearby = ['Bogotá', 'Chía', 'Soacha', 'Zipaquirá', 'Mosquera'];
 
 app.post('/shipping', function (request, response) {
-  // Log the full request body to see the complete structure
-  console.log("Full request body:", JSON.stringify(request.body, null, 2));
-
   try {
     // Use optional chaining to safely access nested properties
-    const city = request.body['_embedded']?.['fx:shipment']?.['shipping_address']?.city;
+    const embeddedData = request.body['_embedded'];
+    const shipmentData = embeddedData?.['fx:shipment'];
+    const shippingAddress = shipmentData?.['shipping_address'];
+    const city = shippingAddress?.city;
 
     // Log the specific fields being accessed
+    console.log("Embedded data:", embeddedData);
+    console.log("Shipment data:", shipmentData);
+    console.log("Shipping address:", shippingAddress);
     console.log("City retrieved:", city);
 
     // Check if the city value is defined
     if (!city) {
-      console.error("City is undefined, could not process the request, full body:", JSON.stringify(request.body, null, 2));
+      console.error("City is undefined, could not process the request");
       response.status(400).send("City information is missing in the request.");
       return;
     }
