@@ -5,8 +5,8 @@ const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// Shipping Groups 
-const bogota = ['Bogotá', 'Bogotá, D.C.']; 
+// Shipping Groups (Make sure to add all relevant Colombian states)
+const bogota = ['Bogotá', 'Bogotá, D.C.']; // Added "Bogotá, D.C." for consistency
 const nearBogota = ['Chía', 'Soacha', 'Zipaquirá', 'Mosquera'];
 const otherRegions = [
     'amazonas', 'antioquia', 'arauca', 'atlántico', 'bolívar', 'boyacá', 'caldas',
@@ -25,7 +25,6 @@ app.post('/shipping', (request, response) => {
 
         // Priority for city (Bogota and nearby cities)
         let city = shipment?.city?.toLowerCase();
-
         if (bogota.includes(city) || nearBogota.includes(city)) {
             // Bogotá shipping
             if (bogota.includes(city)) {
@@ -56,6 +55,7 @@ app.post('/shipping', (request, response) => {
                     service_name: "Envío Municipios Cerca a Bogotá (24-48 hrs)"
                 });
             } 
+
         }
 
         // If city not in Bogotá or nearby, check the region
@@ -88,7 +88,9 @@ app.post('/shipping', (request, response) => {
         response.status(500).send("Error processing request");
     }
 });
+
+
 const PORT = process.env.PORT || 6000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
