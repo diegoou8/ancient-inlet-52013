@@ -27,19 +27,19 @@ app.post('/shipping', (request, response) => {
     console.log("Full request body:", JSON.stringify(request.body, null, 2));
     try {
         const shipment = request.body._embedded['fx:shipment'];
-        const orderTotal = shipment?.total_order || 0; // Use total_order from the payload
+        const totalItemPrice = shipment?.total_item_price || 0; // Use total_item_price from the payload
         const normalizedCity = normalizeText(shipment?.shipping_address?.city || shipment?.city || '');
         const normalizedRegion = normalizeText(shipment?.shipping_address?.region || shipment?.region || '');
 
-        console.log("Order Total:", orderTotal);
+        console.log("Total Item Price:", totalItemPrice);
         console.log("Normalized City:", normalizedCity);
         console.log("Normalized Region:", normalizedRegion);
 
         const shippingResults = [];
 
-        // Check if order total exceeds threshold
-        if (orderTotal > ORDER_TOTAL_THRESHOLD) {
-            console.log("Order total exceeds threshold");
+        // Check if total item price exceeds threshold
+        if (totalItemPrice >= ORDER_TOTAL_THRESHOLD) {
+            console.log("Total item price exceeds threshold");
 
             // Bogotá Shipping
             if (bogota.has(normalizedCity)) {
@@ -87,8 +87,8 @@ app.post('/shipping', (request, response) => {
                 return response.send({ ok: false, message: "Shipping not available for your location" });
             }
         } else {
-            console.log("Order total does not exceed threshold");
-            return response.send({ ok: false, message: "Order total must be greater than 70,000 to view shipping options" });
+            console.log("Total item price does not exceed threshold");
+            return response.send({ ok: false, message: "Total item price must be greater than 70,000 to view shipping options" });
         }
 
         response.setHeader("Content-Type", "application/json");
