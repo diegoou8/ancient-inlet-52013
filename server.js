@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 
 // Function to normalize text (remove accents and convert to lowercase)
-const normalizeText = (text) => 
+const normalizeText = (text) =>
     text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
 const app = express();
@@ -10,8 +10,8 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Shipping Groups with normalized city/region names (lowercase, no accents)
-const bogota = new Set(['bogota', 'bogotá', 'bogotá, d.c.', 'bogota d.c.'].map(normalizeText)); 
-const nearBogota = new Set(['chia', 'chía', 'soacha', 'zipaquirá', 'zipaquira', 'cajica', 'mosquera'].map(normalizeText)); 
+const bogota = new Set(['bogota', 'bogotá', 'bogotá, d.c.', 'bogota d.c.'].map(normalizeText));
+const nearBogota = new Set(['chia', 'chía', 'soacha', 'zipaquirá', 'zipaquira', 'cajica', 'mosquera'].map(normalizeText));
 const otherRegions = new Set([
     'amazonas', 'antioquia', 'arauca', 'atlántico', 'bolívar', 'boyacá', 'caldas',
     'caquetá', 'casanare', 'cauca', 'cesar', 'chocó', 'córdoba', 'guainía', 'guaviare',
@@ -28,17 +28,19 @@ app.post('/shipping', (request, response) => {
     try {
         const shipment = request.body._embedded['fx:shipment'];
         const orderTotal = shipment?.total_order || 0; // Use total_order from the payload
-        const shippingResults = [];
-        const normalizedCity = normalizeText(shipment?.city || '');
-        const normalizedRegion = normalizeText(shipment?.region || '');
+        const normalizedCity = normalizeText(shipment?.shipping_address?.city || shipment?.city || '');
+        const normalizedRegion = normalizeText(shipment?.shipping_address?.region || shipment?.region || '');
 
         console.log("Order Total:", orderTotal);
         console.log("Normalized City:", normalizedCity);
         console.log("Normalized Region:", normalizedRegion);
 
+        const shippingResults = [];
+
         // Check if order total exceeds threshold
         if (orderTotal > ORDER_TOTAL_THRESHOLD) {
             console.log("Order total exceeds threshold");
+
             // Bogotá Shipping
             if (bogota.has(normalizedCity)) {
                 shippingResults.push({
@@ -58,7 +60,7 @@ app.post('/shipping', (request, response) => {
                         service_name: "Envío Prioritario Bogotá (3-4 horas)",
                     });
                 }
-            } 
+            }
             // Near Bogotá Shipping
             else if (nearBogota.has(normalizedCity) || normalizedRegion === "cundinamarca") {
                 shippingResults.push({
@@ -88,7 +90,7 @@ app.post('/shipping', (request, response) => {
             console.log("Order total does not exceed threshold");
             return response.send({ ok: false, message: "Order total must be greater than 70,000 to view shipping options" });
         }
-        
+
         response.setHeader("Content-Type", "application/json");
         response.send({ ok: true, data: { shipping_results: shippingResults } });
 
