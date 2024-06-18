@@ -18,7 +18,7 @@ const otherRegions = new Set([
     'huila', 'la guajira', 'magdalena', 'meta', 'nariño', 'norte de santander', 'putumayo',
     'quindío', 'risaralda', 'san andrés y providencia', 'santander', 'sucre', 'tolima',
     'valle del cauca', 'vaupés', 'vichada'
-]);
+].map(normalizeText));
 
 // Threshold for order total
 const ORDER_TOTAL_THRESHOLD = 70000;
