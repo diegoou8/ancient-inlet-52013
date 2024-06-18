@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Shipping Groups with normalized city/region names (lowercase, no accents)
-const bogota = new Set(['bogota', 'bogotá', 'bogotá, d.c.','bogota d.c.'].map(normalizeText)); 
+const bogota = new Set(['bogota', 'bogotá', 'bogotá, d.c.', 'bogota d.c.'].map(normalizeText)); 
 const nearBogota = new Set(['chia', 'chía', 'soacha', 'zipaquirá', 'zipaquira', 'cajica', 'mosquera'].map(normalizeText)); 
 const otherRegions = new Set([
     'amazonas', 'antioquia', 'arauca', 'atlántico', 'bolívar', 'boyacá', 'caldas',
@@ -27,57 +27,66 @@ app.post('/shipping', (request, response) => {
     console.log("Full request body:", JSON.stringify(request.body, null, 2));
     try {
         const shipment = request.body._embedded['fx:shipment'];
+        const orderTotal = shipment?.total_order || 0; // Use total_order from the payload
         const shippingResults = [];
         const normalizedCity = normalizeText(shipment?.city || '');
         const normalizedRegion = normalizeText(shipment?.region || '');
 
+        console.log("Order Total:", orderTotal);
         console.log("Normalized City:", normalizedCity);
         console.log("Normalized Region:", normalizedRegion);
 
-        // Bogotá Shipping
-        if (bogota.has(normalizedCity)) {
-            shippingResults.push({
-                method: "Envío Bogotá",
-                price: 8000,
-                service_id: 10001,
-                service_name: "Envío Bogotá (24 – 48 Horas)",
-            });
-
-            // Priority Bogotá Shipping (conditional based on time)
-            const currentHour = new Date().getHours();
-            if (currentHour >= 8 && currentHour <= 15) {
+        // Check if order total exceeds threshold
+        if (orderTotal > ORDER_TOTAL_THRESHOLD) {
+            console.log("Order total exceeds threshold");
+            // Bogotá Shipping
+            if (bogota.has(normalizedCity)) {
                 shippingResults.push({
-                    method: "Envío Prioritario Bogotá",
-                    price: 12000,
-                    service_id: 10002,
-                    service_name: "Envío Prioritario Bogotá (3-4 horas)",
+                    method: "Envío Bogotá",
+                    price: 8000,
+                    service_id: 10001,
+                    service_name: "Envío Bogotá (24 – 48 Horas)",
+                });
+
+                // Priority Bogotá Shipping (conditional based on time)
+                const currentHour = new Date().getHours();
+                if (currentHour >= 6 && currentHour <= 15) {
+                    shippingResults.push({
+                        method: "Envío Prioritario Bogotá",
+                        price: 12000,
+                        service_id: 10002,
+                        service_name: "Envío Prioritario Bogotá (3-4 horas)",
+                    });
+                }
+            } 
+            // Near Bogotá Shipping
+            else if (nearBogota.has(normalizedCity) || normalizedRegion === "cundinamarca") {
+                shippingResults.push({
+                    method: "Envío Municipios Cerca a Bogotá",
+                    price: 15000,
+                    service_id: 10003,
+                    service_name: "Envío Municipios Cerca a Bogotá (24-48 hrs)"
                 });
             }
-        } 
 
-        // Near Bogotá Shipping
-        else if (nearBogota.has(normalizedCity) || normalizedRegion === "cundinamarca") {
-            shippingResults.push({
-                method: "Envío Municipios Cerca a Bogotá",
-                price: 15000,
-                service_id: 10003,
-                service_name: "Envío Municipios Cerca a Bogotá (24-48 hrs)"
-            });
-        }
+            // Other Regions Shipping
+            else if (otherRegions.has(normalizedRegion)) {
+                shippingResults.push({
+                    method: "Envíos fuera de Bogotá",
+                    price: 39000,
+                    service_id: 10004,
+                    service_name: "Envíos fuera de Bogotá (48-72 hrs)"
+                });
+            }
 
-        // Other Regions Shipping
-        else if (otherRegions.has(normalizedRegion)) {
-            shippingResults.push({
-                method: "Envíos fuera de Bogotá",
-                price: 39000,
-                service_id: 10004,
-                service_name: "Envíos fuera de Bogotá (48-72 hrs)"
-            });
-        }
-
-        // No Shipping Available
-        if (shippingResults.length === 0) {
-            return response.send({ ok: false, message: "Shipping not available for your location" });
+            // No Shipping Available
+            if (shippingResults.length === 0) {
+                console.log("No shipping options available for the location");
+                return response.send({ ok: false, message: "Shipping not available for your location" });
+            }
+        } else {
+            console.log("Order total does not exceed threshold");
+            return response.send({ ok: false, message: "Order total must be greater than 70,000 to view shipping options" });
         }
         
         response.setHeader("Content-Type", "application/json");
