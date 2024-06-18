@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Shipping Groups with normalized city/region names (lowercase, no accents)
-const bogota = new Set(['bogota', 'bogotá', 'bogotá, d.c.'].map(normalizeText)); 
+const bogota = new Set(['bogota', 'bogotá', 'bogotá, d.c.','bogota d.c.'].map(normalizeText)); 
 const nearBogota = new Set(['chia', 'chía', 'soacha', 'zipaquirá', 'zipaquira', 'cajica', 'mosquera'].map(normalizeText)); 
 const otherRegions = new Set([
     'amazonas', 'antioquia', 'arauca', 'atlántico', 'bolívar', 'boyacá', 'caldas',
@@ -20,6 +20,8 @@ const otherRegions = new Set([
     'valle del cauca', 'vaupés', 'vichada'
 ]);
 
+// Threshold for order total
+const ORDER_TOTAL_THRESHOLD = 70000;
 
 app.post('/shipping', (request, response) => {
     console.log("Full request body:", JSON.stringify(request.body, null, 2));
@@ -43,7 +45,7 @@ app.post('/shipping', (request, response) => {
 
             // Priority Bogotá Shipping (conditional based on time)
             const currentHour = new Date().getHours();
-            if (currentHour >= 6 && currentHour <= 18) {
+            if (currentHour >= 8 && currentHour <= 15) {
                 shippingResults.push({
                     method: "Envío Prioritario Bogotá",
                     price: 12000,
