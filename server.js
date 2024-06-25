@@ -52,7 +52,7 @@ app.post('/shipping', (request, response) => {
 
                 // Priority Bogotá Shipping (conditional based on time)
                 const currentHour = new Date().getHours();
-                if (currentHour >= 6 && currentHour <= 15) {
+                if (currentHour >= 6 && currentHour < 15) {
                     shippingResults.push({
                         method: "Envío Prioritario Bogotá",
                         price: 12000,
