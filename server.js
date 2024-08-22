@@ -47,7 +47,7 @@ app.post('/shipping', (request, response) => {
                     method: "Envío Bogotá",
                     price: 0,
                     service_id: 10001,
-                    service_name: "Envío Bogotá (24 – 48 Horas)",
+                    service_name: "Envío Gratis Bogotá (24 – 48 Horas)",
                 });
 
                 // Priority Bogotá Shipping (conditional based on time)
