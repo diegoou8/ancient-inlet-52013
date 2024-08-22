@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Shipping Groups with normalized city/region names (lowercase, no accents)
-const bogota = new Set(['bogota', 'bogotá', 'bogotá, d.c.', 'bogotá d.c', 'bogota dc.', 'bogota d.c', 'bogota dc'].map(normalizeText));
+const bogota = new Set(['bogota', 'bogotá', 'bogotá, d.c.', 'bogotá d.c', 'bogota dc.', 'bogota d.c', 'bogota dc','bogota '].map(normalizeText));
 const nearBogota = new Set(['chia', 'chía', 'soacha', 'zipaquirá', 'zipaquira', 'cajica', 'mosquera'].map(normalizeText));
 const otherRegions = new Set([
     'amazonas', 'antioquia', 'arauca', 'atlántico', 'bolívar', 'boyacá', 'caldas',
@@ -45,7 +45,7 @@ app.post('/shipping', (request, response) => {
             if (bogota.has(normalizedCity)) {
                 shippingResults.push({
                     method: "Envío Bogotá",
-                    price: 8000,
+                    price: 0,
                     service_id: 10001,
                     service_name: "Envío Bogotá (24 – 48 Horas)",
                 });
