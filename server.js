@@ -1,28 +1,3 @@
-const express = require('express');
-const bodyParser = require('body-parser');
-
-// Function to normalize text (remove accents and convert to lowercase)
-const normalizeText = (text) =>
-    text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
-
-const app = express();
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// Shipping Groups with normalized city/region names (lowercase, no accents)
-const bogota = new Set(['bogota', 'bogotá', 'bogotá, d.c.', 'bogotá d.c', 'bogota dc.', 'bogota d.c', 'bogota dc','bogota '].map(normalizeText));
-const nearBogota = new Set(['chia', 'chía', 'soacha', 'zipaquirá', 'zipaquira', 'cajica', 'mosquera'].map(normalizeText));
-const otherRegions = new Set([
-    'amazonas', 'antioquia', 'arauca', 'atlántico', 'bolívar', 'boyacá', 'caldas',
-    'caquetá', 'casanare', 'cauca', 'cesar', 'chocó', 'córdoba', 'guainía', 'guaviare',
-    'huila', 'la guajira', 'magdalena', 'meta', 'nariño', 'norte de santander', 'putumayo',
-    'quindío', 'risaralda', 'san andrés y providencia', 'santander', 'sucre', 'tolima',
-    'valle del cauca', 'vaupés', 'vichada'
-].map(normalizeText));
-
-// Threshold for order total
-const ORDER_TOTAL_THRESHOLD = 70000;
-
 app.post('/shipping', (request, response) => {
     console.log("Full request body:", JSON.stringify(request.body, null, 2));
     try {
@@ -41,8 +16,18 @@ app.post('/shipping', (request, response) => {
         if (totalItemPrice >= ORDER_TOTAL_THRESHOLD) {
             console.log("Total item price exceeds threshold");
 
+            // **City-Based Checks First** 
+            // Barranquilla and Montería Shipping
+            if (barranquillaMonteria.has(normalizedCity)) {
+                shippingResults.push({
+                    method: "Envío Barranquilla y Montería",
+                    price: 39000,
+                    service_id: 10005,
+                    service_name: "Envío Barranquilla y Montería (72 hrs - Lunes, Martes, Miércoles)"
+                });
+            }
             // Bogotá Shipping
-            if (bogota.has(normalizedCity)) {
+            else if (bogota.has(normalizedCity)) {
                 shippingResults.push({
                     method: "Envío Bogotá",
                     price: 0,
@@ -62,7 +47,7 @@ app.post('/shipping', (request, response) => {
                 }
             }
             // Near Bogotá Shipping
-            else if (nearBogota.has(normalizedCity) || normalizedRegion === "cundinamarca") {
+            else if (nearBogota.has(normalizedCity)) {
                 shippingResults.push({
                     method: "Envío Municipios Cerca a Bogotá",
                     price: 15000,
@@ -70,7 +55,15 @@ app.post('/shipping', (request, response) => {
                     service_name: "Envío Municipios Cerca a Bogotá (24-48 hrs)"
                 });
             }
-
+            // **Region-Based Check After City Checks**
+            else if (normalizedRegion === "cundinamarca") {
+                shippingResults.push({
+                    method: "Envío Municipios Cerca a Bogotá",
+                    price: 15000,
+                    service_id: 10003,
+                    service_name: "Envío Municipios Cerca a Bogotá (24-48 hrs)"
+                });
+            }
             // Other Regions Shipping
             else if (otherRegions.has(normalizedRegion)) {
                 shippingResults.push({
@@ -98,9 +91,4 @@ app.post('/shipping', (request, response) => {
         console.error("Error during shipping rate setup:", error);
         response.status(500).send("Error processing request");
     }
-});
-
-const PORT = process.env.PORT || 6000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
 });
