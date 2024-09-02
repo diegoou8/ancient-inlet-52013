@@ -45,7 +45,7 @@ app.post('/shipping', (request, response) => {
             if (bogota.has(normalizedCity)) {
                 shippingResults.push({
                     method: "Envío Bogotá",
-                    price: 0,
+                    price: 8000,
                     service_id: 10001,
                     service_name: "Envío Gratis Bogotá (24 – 48 Horas)",
                 });
