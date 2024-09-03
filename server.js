@@ -75,10 +75,10 @@ app.post('/shipping', (request, response) => {
             // Barranquilla and Monteria Shipping
             else if (barranquillaMonteria.has(normalizedCity)) {
                 shippingResults.push({
-                    method: "Envío a Barranquilla o Monteria (72 horas - envios Lunes, Martes y Miercoles)",
+                    method: "Envío a Barranquilla o Monteria",
                     price: 39000,
                     service_id: 10005,
-                    service_name: "Envios Barranquila Monteria (72 horas)"
+                    service_name: "(72 horas - envios Lunes, Martes y Miercoles)"
                 });
             }
 
