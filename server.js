@@ -12,6 +12,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Shipping Groups with normalized city/region names (lowercase, no accents)
 const bogota = new Set(['bogota', 'bogotá', 'bogotá, d.c.', 'bogotá d.c', 'bogota dc.', 'bogota d.c', 'bogota dc','bogota '].map(normalizeText));
 const nearBogota = new Set(['chia', 'chía', 'soacha', 'zipaquirá', 'zipaquira', 'cajica', 'mosquera'].map(normalizeText));
+const barranquillaMonteria = new Set(['barranquilla', 'monteria', 'montería'].map(normalizeText));
 const otherRegions = new Set([
     'amazonas', 'antioquia', 'arauca', 'atlántico', 'bolívar', 'boyacá', 'caldas',
     'caquetá', 'casanare', 'cauca', 'cesar', 'chocó', 'córdoba', 'guainía', 'guaviare',
@@ -27,7 +28,7 @@ app.post('/shipping', (request, response) => {
     console.log("Full request body:", JSON.stringify(request.body, null, 2));
     try {
         const shipment = request.body._embedded['fx:shipment'];
-        const totalItemPrice = shipment?.total_item_price || 0; // Use total_item_price from the payload
+        const totalItemPrice = shipment?.total_item_price || 0; // Use total_item_price from the payload or 0
         const normalizedCity = normalizeText(shipment?.shipping_address?.city || shipment?.city || '');
         const normalizedRegion = normalizeText(shipment?.shipping_address?.region || shipment?.region || '');
 
@@ -68,6 +69,16 @@ app.post('/shipping', (request, response) => {
                     price: 15000,
                     service_id: 10003,
                     service_name: "Envío Municipios Cerca a Bogotá (24-48 hrs)"
+                });
+            }
+
+            // Barranquilla and Monteria Shipping
+            else if (barranquillaMonteria.has(normalizedCity)) {
+                shippingResults.push({
+                    method: "Envío a Barranquilla o Monteria (72 horas - envios Lunes, Martes y Miercoles)",
+                    price: 39000,
+                    service_id: 10005,
+                    service_name: "Envios Barranquila Monteria (72 horas)"
                 });
             }
 
