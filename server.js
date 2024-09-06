@@ -31,6 +31,7 @@ app.post('/shipping', (request, response) => {
     console.log("Full request body:", JSON.stringify(request.body, null, 2));
     try {
         const shipment = request.body._embedded['fx:shipment'];
+        const items = request.body._embedded['fx:items'];
         const totalItemPrice = shipment?.total_item_price || 0; // Use total_item_price from the payload or 0
         const normalizedCity = normalizeText(shipment?.shipping_address?.city || shipment?.city || '');
         const normalizedRegion = normalizeText(shipment?.shipping_address?.region || shipment?.region || '');
@@ -40,11 +41,7 @@ app.post('/shipping', (request, response) => {
         console.log("Normalized City:", normalizedCity);
         console.log("Normalized Region:", normalizedRegion);
         console.log("Items number: ", itemCount)
-        // Check if the items are accessible
-        if (!shipment._embedded || !shipment._embedded['fx:items']) {
-            console.error('Items are not defined in the payload');
-            return response.status(500).send({ error: "Items data is missing from the payload" });
-        }
+    
 
         const shippingResults = [];
         let hasReservaProduct = false;
@@ -54,7 +51,7 @@ app.post('/shipping', (request, response) => {
             console.log("Total item price exceeds threshold");
 
             for (let i = 0; i < itemCount; i++) {
-                const itemCategoryName = normalizeText(items[i]._embedded['fx:item_category'].name);
+                const itemCategoryName = normalizeText(items[i]?.name);
                 console.log(`Item ${i + 1} Category:`, itemCategoryName);
                 
                 if (reservaProducts.has(itemCategoryName)) {
