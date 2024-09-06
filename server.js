@@ -28,7 +28,7 @@ const ORDER_TOTAL_THRESHOLD = 70000;
 const reservaProducts = new Set(['default for all products', 'panettone'].map(normalizeText));
 
 app.post('/shipping', (request, response) => {
-    console.log("Full request body:", JSON.stringify(request.body, null, 2));
+    //console.log("Full request body:", JSON.stringify(request.body, null, 2));
     try {
         const shipment = request.body._embedded['fx:shipment'];
         const items = request.body._embedded['fx:items'];
@@ -37,10 +37,10 @@ app.post('/shipping', (request, response) => {
         const normalizedRegion = normalizeText(shipment?.shipping_address?.region || shipment?.region || '');
         const itemCount = shipment?.item_count || 0;
 
-        console.log("Total Item Price:", totalItemPrice);
-        console.log("Normalized City:", normalizedCity);
-        console.log("Normalized Region:", normalizedRegion);
-        console.log("Items number: ", itemCount)
+        //console.log("Total Item Price:", totalItemPrice);
+        //console.log("Normalized City:", normalizedCity);
+        //console.log("Normalized Region:", normalizedRegion);
+        //console.log("Items number: ", itemCount)
     
 
         const shippingResults = [];
