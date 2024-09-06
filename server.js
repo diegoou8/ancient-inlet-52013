@@ -24,6 +24,9 @@ const otherRegions = new Set([
 // Threshold for order total
 const ORDER_TOTAL_THRESHOLD = 70000;
 
+// Define product names for which "Envio reserva" applies
+const reservaProducts = new Set(['default for all products', 'panettone'].map(normalizeText));
+
 app.post('/shipping', (request, response) => {
     console.log("Full request body:", JSON.stringify(request.body, null, 2));
     try {
@@ -31,19 +34,40 @@ app.post('/shipping', (request, response) => {
         const totalItemPrice = shipment?.total_item_price || 0; // Use total_item_price from the payload or 0
         const normalizedCity = normalizeText(shipment?.shipping_address?.city || shipment?.city || '');
         const normalizedRegion = normalizeText(shipment?.shipping_address?.region || shipment?.region || '');
+        const itemCount = shipment?.item_count || 0;
 
         console.log("Total Item Price:", totalItemPrice);
         console.log("Normalized City:", normalizedCity);
         console.log("Normalized Region:", normalizedRegion);
 
         const shippingResults = [];
+        let hasReservaProduct = false;
 
         // Check if total item price exceeds threshold
         if (totalItemPrice >= ORDER_TOTAL_THRESHOLD) {
             console.log("Total item price exceeds threshold");
 
+            for (let i = 0; i < itemCount; i++) {
+                const itemCategory = normalizeText(shipment?.items?.[i]?._embedded?.['fx:item_category']?.name || '');
+                console.log(`Item ${i + 1} Category:`, itemCategory);
+                
+                if (reservaProducts.has(itemCategory)) {
+                    hasReservaProduct = true;
+                    break; // No need to continue once we find a "reserva" product
+                }
+            }
+
             // Bogotá Shipping
             if (bogota.has(normalizedCity)) {
+                if (hasReservaProduct) {
+                // Only add "Envio reserva" if there's a matching product
+                shippingResults.push({
+                    method: "Envío producto reserva",
+                    price: 8000,
+                    service_id: 10006,  // Unique service_id for "Envio reserva"
+                    service_name: "Enviaremos tu producto cuando esté disponible",
+                });
+            } else {
                 shippingResults.push({
                     method: "Envío Bogotá",
                     price: 8000,
@@ -65,9 +89,21 @@ app.post('/shipping', (request, response) => {
                         service_name: "Envío Prioritario Bogotá (3-4 horas)",
                     });
                 }
+                
+
             }
+        }
             // Near Bogotá Shipping
             else if (nearBogota.has(normalizedCity) || normalizedRegion === "cundinamarca") {
+                if (hasReservaProduct) {
+                // Only add "Envio reserva" if there's a matching product
+                shippingResults.push({
+                    method: "Envío producto reserva",
+                    price: 15000,
+                    service_id: 10006,  // Unique service_id for "Envio reserva"
+                    service_name: "Enviaremos tu producto cuando esté disponible",
+                });
+            } else {
                 shippingResults.push({
                     method: "Envío Municipios Cerca a Bogotá",
                     price: 15000,
@@ -75,9 +111,19 @@ app.post('/shipping', (request, response) => {
                     service_name: "Envío Municipios Cerca a Bogotá (24-48 hrs)"
                 });
             }
+        }
 
             // Barranquilla and Monteria Shipping
             else if (barranquillaMonteria.has(normalizedCity)) {
+                if (hasReservaProduct) {
+                // Only add "Envio reserva" if there's a matching product
+                shippingResults.push({
+                    method: "Envío producto reserva",
+                    price: 39000,
+                    service_id: 10006,  // Unique service_id for "Envio reserva"
+                    service_name: "Enviaremos tu producto cuando esté disponible",
+                });
+            } else {
                 shippingResults.push({
                     method: "Envío a Barranquilla o Monteria",
                     price: 39000,
@@ -85,9 +131,19 @@ app.post('/shipping', (request, response) => {
                     service_name: "(72 horas - envios Lunes, Martes y Miercoles)"
                 });
             }
+        }
 
             // Other Regions Shipping
             else if (otherRegions.has(normalizedRegion)) {
+                if (hasReservaProduct) {
+                // Only add "Envio reserva" if there's a matching product
+                shippingResults.push({
+                    method: "Envío producto reserva",
+                    price: 39000,
+                    service_id: 10006,  // Unique service_id for "Envio reserva"
+                    service_name: "Enviaremos tu producto cuando esté disponible",
+                });
+            } else {
                 shippingResults.push({
                     method: "Envíos fuera de Bogotá",
                     price: 39000,
@@ -95,6 +151,7 @@ app.post('/shipping', (request, response) => {
                     service_name: "Envíos fuera de Bogotá (48-72 hrs)"
                 });
             }
+        }
 
             // No Shipping Available
             if (shippingResults.length === 0) {
