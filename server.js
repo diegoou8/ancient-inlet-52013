@@ -39,6 +39,8 @@ app.post('/shipping', (request, response) => {
         console.log("Total Item Price:", totalItemPrice);
         console.log("Normalized City:", normalizedCity);
         console.log("Normalized Region:", normalizedRegion);
+        // Accessing items from shipment correctly
+        const items = shipment._embedded['fx:items'];
 
         const shippingResults = [];
         let hasReservaProduct = false;
@@ -47,13 +49,13 @@ app.post('/shipping', (request, response) => {
         if (totalItemPrice >= ORDER_TOTAL_THRESHOLD) {
             console.log("Total item price exceeds threshold");
 
-            for (let i = 0; i < itemCount; i++) {
+            for (let i = 0; i < items.length; i++) {
                 const itemCategoryName = normalizeText(items[i]._embedded['fx:item_category'].name);
                 console.log(`Item ${i + 1} Category:`, itemCategoryName);
                 
                 if (reservaProducts.has(itemCategoryName)) {
                     hasReservaProduct = true;
-                    break; // No need to continue once we find a "reserva" product
+                    break; // Stop checking once a "reserva" product is found
                 }
             }
 
