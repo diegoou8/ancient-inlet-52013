@@ -48,10 +48,10 @@ app.post('/shipping', (request, response) => {
             console.log("Total item price exceeds threshold");
 
             for (let i = 0; i < itemCount; i++) {
-                const itemCategory = normalizeText(shipment?.items?.[i]?._embedded?.['fx:item_category']?.name || '');
-                console.log(`Item ${i + 1} Category:`, itemCategory);
+                const itemCategoryName = normalizeText(items[i]._embedded['fx:item_category'].name);
+                console.log(`Item ${i + 1} Category:`, itemCategoryName);
                 
-                if (reservaProducts.has(itemCategory)) {
+                if (reservaProducts.has(itemCategoryName)) {
                     hasReservaProduct = true;
                     break; // No need to continue once we find a "reserva" product
                 }
