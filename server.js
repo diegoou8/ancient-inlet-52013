@@ -39,6 +39,7 @@ app.post('/shipping', (request, response) => {
         console.log("Total Item Price:", totalItemPrice);
         console.log("Normalized City:", normalizedCity);
         console.log("Normalized Region:", normalizedRegion);
+        console.log("Items number: ", itemCount)
         // Check if the items are accessible
         if (!shipment._embedded || !shipment._embedded['fx:items']) {
             console.error('Items are not defined in the payload');
