@@ -30,7 +30,7 @@ const reservaProducts = new Set(['default for all products', 'panettone'].map(no
 app.post('/shipping', (request, response) => {
     console.log("Full request body:", JSON.stringify(request.body, null, 2));
     try {
-        const shipment = request.body._embedded['fx:shipment'];
+        const shipment = request.body['fx:shipment'];
         const items = request.body._embedded['fx:item_category'];
         const totalItemPrice = shipment?.total_item_price || 0; // Use total_item_price from the payload or 0
         const normalizedCity = normalizeText(shipment?.shipping_address?.city || shipment?.city || '');
