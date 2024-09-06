@@ -31,7 +31,7 @@ app.post('/shipping', (request, response) => {
     console.log("Full request body:", JSON.stringify(request.body, null, 2));
     try {
         const shipment = request.body._embedded['fx:shipment'];
-        const items = request.body['fx:item_category'];
+        const items = request.body._embedded['fx:items'];
         const totalItemPrice = shipment?.total_item_price || 0; // Use total_item_price from the payload or 0
         const normalizedCity = normalizeText(shipment?.shipping_address?.city || shipment?.city || '');
         const normalizedRegion = normalizeText(shipment?.shipping_address?.region || shipment?.region || '');
@@ -51,7 +51,8 @@ app.post('/shipping', (request, response) => {
             console.log("Total item price exceeds threshold");
 
             for (let i = 0; i < itemCount; i++) {
-                const itemCategoryName = normalizeText(items[i]?.name);
+                // Ensure the path to the item category and its name is correct.
+                const itemCategoryName = normalizeText(items[i]._embedded['fx:item_category'].name);
                 console.log(`Item ${i + 1} Category:`, itemCategoryName);
                 
                 if (reservaProducts.has(itemCategoryName)) {
