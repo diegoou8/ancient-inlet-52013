@@ -39,8 +39,11 @@ app.post('/shipping', (request, response) => {
         console.log("Total Item Price:", totalItemPrice);
         console.log("Normalized City:", normalizedCity);
         console.log("Normalized Region:", normalizedRegion);
-        // Accessing items from shipment correctly
-        const items = shipment._embedded['fx:items'];
+        // Check if the items are accessible
+        if (!shipment._embedded || !shipment._embedded['fx:items']) {
+            console.error('Items are not defined in the payload');
+            return response.status(500).send({ error: "Items data is missing from the payload" });
+        }
 
         const shippingResults = [];
         let hasReservaProduct = false;
@@ -49,7 +52,7 @@ app.post('/shipping', (request, response) => {
         if (totalItemPrice >= ORDER_TOTAL_THRESHOLD) {
             console.log("Total item price exceeds threshold");
 
-            for (let i = 0; i < items.length; i++) {
+            for (let i = 0; i < itemCount; i++) {
                 const itemCategoryName = normalizeText(items[i]._embedded['fx:item_category'].name);
                 console.log(`Item ${i + 1} Category:`, itemCategoryName);
                 
