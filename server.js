@@ -1,3 +1,32 @@
+const express = require('express');
+const bodyParser = require('body-parser');
+
+// Function to normalize text (remove accents and convert to lowercase)
+const normalizeText = (text) =>
+    text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+const app = express();
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Shipping Groups with normalized city/region names (lowercase, no accents)
+const bogota = new Set(['bogota', 'bogotá', 'bogotá, d.c.', 'bogotá d.c', 'bogota dc.', 'bogota d.c', 'bogota dc','bogota ','bogotá d,c.','bogotá, d.c. ','bogotá d,c,','bogotá d,c. ','bogota,d.c' ].map(normalizeText));
+const nearBogota = new Set(['chia', 'chía', 'soacha', 'zipaquirá', 'zipaquira', 'cajica', 'mosquera'].map(normalizeText));
+const barranquillaMonteria = new Set(['barranquilla', 'monteria', 'montería'].map(normalizeText));
+const otherRegions = new Set([
+    'amazonas', 'antioquia', 'arauca', 'atlántico', 'bolívar', 'boyacá', 'caldas',
+    'caquetá', 'casanare', 'cauca', 'cesar', 'chocó', 'córdoba', 'guainía', 'guaviare',
+    'huila', 'la guajira', 'magdalena', 'meta', 'nariño', 'norte de santander', 'putumayo',
+    'quindío', 'risaralda', 'san andrés y providencia', 'santander', 'sucre', 'tolima',
+    'valle del cauca', 'vaupés', 'vichada'
+].map(normalizeText));
+
+// Threshold for order total
+const ORDER_TOTAL_THRESHOLD = 70000;
+
+// Define product names for which "Envio reserva" applies
+const reservaProducts = new Set(['default for all products', 'panettone'].map(normalizeText));
+
 app.post('/shipping', (request, response) => {
     try {
         const shipment = request.body._embedded['fx:shipment'];
