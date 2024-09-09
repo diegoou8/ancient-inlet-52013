@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Shipping Groups with normalized city/region names (lowercase, no accents)
-const bogota = new Set(['bogota', 'bogotá', 'bogotá, d.c.', 'bogotá d.c', 'bogota dc.', 'bogota d.c', 'bogota dc','bogota ','bogotá d,c.','bogotá, d.c. ','bogotá d,c,','bogotá d,c. ' ].map(normalizeText));
+const bogota = new Set(['bogota', 'bogotá', 'bogotá, d.c.', 'bogotá d.c', 'bogota dc.', 'bogota d.c', 'bogota dc','bogota ','bogotá d,c.','bogotá, d.c. ','bogotá d,c,','bogotá d,c. ','bogota,d.c' ].map(normalizeText));
 const nearBogota = new Set(['chia', 'chía', 'soacha', 'zipaquirá', 'zipaquira', 'cajica', 'mosquera'].map(normalizeText));
 const barranquillaMonteria = new Set(['barranquilla', 'monteria', 'montería'].map(normalizeText));
 const otherRegions = new Set([
