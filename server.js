@@ -29,8 +29,8 @@ const reservaProducts = new Set(['default for all products', 'panettone'].map(no
 
 app.post('/shipping', (request, response) => {
     try {
-        const shipment = request.body._embedded['fx:shipment'];
-        const items = request.body._embedded['fx:items'];
+        const shipment = request.body._embedded?.['fx:shipment'];
+        const items = request.body._embedded?.['fx:items'] || [];
         const totalItemPrice = shipment?.total_item_price || 0;
         const normalizedCity = normalizeText(shipment?.shipping_address?.city || shipment?.city || '');
         const normalizedRegion = normalizeText(shipment?.shipping_address?.region || shipment?.region || '');
@@ -47,11 +47,12 @@ app.post('/shipping', (request, response) => {
         if (totalItemPrice >= ORDER_TOTAL_THRESHOLD) {
             console.log("Total item price exceeds threshold");
 
+            // Loop through items and check for "reserva" products
             for (let i = 0; i < itemCount; i++) {
                 const item = items[i];
                 
-                // Check if '_embedded' and 'fx:item_category' exist
-                if (item._embedded && item._embedded['fx:item_category'] && item._embedded['fx:item_category'].name) {
+                // Check if '_embedded' and 'fx:item_category' exist and log if undefined
+                if (item && item._embedded?.['fx:item_category']?.name) {
                     const itemCategoryName = normalizeText(item._embedded['fx:item_category'].name);
                     console.log(`Item ${i + 1} Category:`, itemCategoryName);
                     
@@ -65,7 +66,7 @@ app.post('/shipping', (request, response) => {
                 }
             }
 
-            // Bogotá Shipping
+            // Shipping logic based on region and "reserva" product
             if (bogota.has(normalizedCity)) {
                 if (hasReservaProduct) {
                     shippingResults.push({
@@ -164,6 +165,7 @@ app.post('/shipping', (request, response) => {
     }
 });
 
+// Use correct port for Heroku
 const PORT = process.env.PORT || 6000;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
