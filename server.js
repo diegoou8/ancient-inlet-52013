@@ -30,8 +30,8 @@ const reservaProducts = new Set(['default for all products', 'panettone'].map(no
 app.post('/shipping', (request, response) => {
     try {
         // Print the entire payload to inspect its structure
-        console.log("Full request payload:", JSON.stringify(request.body, null, 2));
-        
+        // console.log("Full request payload:", JSON.stringify(request.body, null, 2));
+
         const shipment = request.body._embedded?.['fx:shipment'];
         const items = request.body._embedded?.['fx:items'] || [];
         const totalItemPrice = shipment?.total_item_price || 0;
@@ -39,9 +39,9 @@ app.post('/shipping', (request, response) => {
         const normalizedRegion = normalizeText(shipment?.shipping_address?.region || shipment?.region || '');
         const itemCount = shipment?.item_count || 0;
 
-        console.log("Total Item Price:", totalItemPrice);
-        console.log("Normalized City:", normalizedCity);
-        console.log("Normalized Region:", normalizedRegion);
+        // console.log("Total Item Price:", totalItemPrice);
+        // console.log("Normalized City:", normalizedCity);
+        // console.log("Normalized Region:", normalizedRegion);
 
         const shippingResults = [];
         let hasReservaProduct = false;
@@ -57,7 +57,7 @@ app.post('/shipping', (request, response) => {
                 // Check if '_embedded' and 'fx:item_category' exist and log if undefined
                 if (item && item._embedded?.['fx:item_category']?.name) {
                     const itemCategoryName = normalizeText(item._embedded['fx:item_category'].name);
-                    console.log(`Item ${i + 1} Category:`, itemCategoryName);
+                    // console.log(`Item ${i + 1} Category:`, itemCategoryName);
                     
                     if (reservaProducts.has(itemCategoryName)) {
                         hasReservaProduct = true;
