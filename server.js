@@ -10,7 +10,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // Shipping Groups with normalized city/region names (lowercase, no accents)
-const bogota = new Set(['bogota', 'bogotá', 'bogotá, d.c.', 'bogotá d.c', 'bogota dc.', 'bogota d.c', 'bogota dc','bogota ','bogotá d,c.','bogotá, d.c. ','bogotá d,c,','bogotá d,c. ','bogota,d.c' ].map(normalizeText));
+const bogota = new Set(['bogota', 'bogotá', 'bogotá, d.c.', 'bogotá d.c', 'bogota dc.', 'bogota d.c', 'bogota dc','bogota ','bogotá d,c.','bogotá, d.c. ','bogotá d,c,','bogotá d,c. ','bogota,d.c','bogotáD.C','bogotá, DC' ].map(normalizeText));
 const nearBogota = new Set(['chia', 'chía', 'soacha', 'zipaquirá', 'zipaquira', 'cajica', 'mosquera'].map(normalizeText));
 const barranquillaMonteria = new Set(['barranquilla', 'monteria', 'montería'].map(normalizeText));
 const otherRegions = new Set([
@@ -29,6 +29,9 @@ const reservaProducts = new Set(['default for all products', 'panettone'].map(no
 
 app.post('/shipping', (request, response) => {
     try {
+        // Print the entire payload to inspect its structure
+        console.log("Full request payload:", JSON.stringify(request.body, null, 2));
+        
         const shipment = request.body._embedded?.['fx:shipment'];
         const items = request.body._embedded?.['fx:items'] || [];
         const totalItemPrice = shipment?.total_item_price || 0;
