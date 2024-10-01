@@ -80,8 +80,8 @@ app.post('/shipping', (request, response) => {
                     });
                 } else {
                     shippingResults.push({
-                        method: "Envío Bogotá Promoción",
-                        price: 0,
+                        method: "Envío Bogotá",
+                        price: 8000,
                         service_id: 10001,
                         service_name: "Envío Bogotá (24 – 48 Horas)",
                     });
