@@ -25,7 +25,7 @@ const otherRegions = new Set([
 const ORDER_TOTAL_THRESHOLD = 70000;
 
 // Define product names for which "Envio reserva" applies
-const reservaProducts = new Set(['default for all products', 'panettone'].map(normalizeText));
+const reservaProducts = new Set(['NULL'].map(normalizeText));
 
 app.post('/shipping', (request, response) => {
     try {
