@@ -83,7 +83,7 @@ app.post('/shipping', (request, response) => {
                         method: "Envío Bogotá (Envío 21 de abril)",
                         price: 8000,
                         service_id: 10001,
-                        service_name: "Envío Bogotá (24 – 48 Horas)",
+                        service_name: "Envío Bogotá", //(24 – 48 Horas)
                     });
 
                     // const currentHour = new Date().getHours();
