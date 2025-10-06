@@ -12,7 +12,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Shipping Groups with normalized city/region names (lowercase, no accents)
 const bogota = new Set(['bogota', 'bogotá', 'bogotá, d.c.', 'bogotá d.c', 'bogota dc.', 'bogota d.c', 'bogota dc','bogota ','bogotá d,c.','bogotá, d.c. ','bogotá d,c,','bogotá d,c. ','bogota,d.c','bogotáD.C','bogotá, DC' ].map(normalizeText));
 const nearBogota = new Set(['chia', 'chía', 'soacha', 'zipaquirá', 'zipaquira', 'cajica', 'mosquera'].map(normalizeText));
-const barranquillaMonteria = new Set(['barranquilla', 'monteria', 'montería'].map(normalizeText));
+const barranquillaMonteria = new Set(['barranquilla', 'cartagena'].map(normalizeText));
 const otherRegions = new Set([
     'amazonas', 'antioquia', 'arauca', 'atlántico', 'bolívar', 'boyacá', 'caldas',
     'caquetá', 'casanare', 'cauca', 'cesar', 'chocó', 'córdoba', 'guainía', 'guaviare',
@@ -68,37 +68,37 @@ app.post('/shipping', (request, response) => {
                     console.warn(`Warning: Item ${i + 1} does not have a valid '_embedded' or 'fx:item_category' structure.`);
                 }
             }
-  
+
             // Shipping logic based on region and "reserva" product
             if (bogota.has(normalizedCity)) {
                 if (hasReservaProduct) {
                     shippingResults.push({
-                        method: "Envío producto reserva (Envío 21 de abril)",
+                        method: "Envío producto reserva",
                         price: 8000,
                         service_id: 10006,
                         service_name: "Enviaremos tu producto cuando esté disponible",
                     });
                 } else {
                     shippingResults.push({
-                        method: "Envío Bogotá (Envío 21 de abril)",
+                        method: "Envío Bogotá",
                         price: 8000,
                         service_id: 10001,
-                        service_name: "Envío Bogotá", //(24 – 48 Horas)
+                        service_name: "Envío Bogotá (24 – 48 Horas)",
                     });
 
-                    // const currentHour = new Date().getHours();
-                    // const currentDay = new Date().getDay();
-                    // if (
-                    //     (currentDay >= 1 && currentDay <= 5 && currentHour >= 6 && currentHour < 15) ||
-                    //     (currentDay === 6 && currentHour >= 6 && currentHour < 11)
-                    // ) {
-                    //     shippingResults.push({
-                    //         method: "Envío Prioritario Bogotá",
-                    //         price: 12000,
-                    //         service_id: 10002,
-                    //         service_name: "Envío Prioritario Bogotá (3-4 horas)",
-                    //     });
-                    // }
+                    const currentHour = new Date().getHours();
+                    const currentDay = new Date().getDay();
+                    if (
+                        (currentDay >= 1 && currentDay <= 5 && currentHour >= 6 && currentHour < 15) ||
+                        (currentDay === 6 && currentHour >= 6 && currentHour < 11)
+                    ) {
+                        shippingResults.push({
+                            method: "Envío Prioritario Bogotá",
+                            price: 12000,
+                            service_id: 10002,
+                            service_name: "Envío Prioritario Bogotá (3-4 horas)",
+                        });
+                    }
                 }
             } else if (nearBogota.has(normalizedCity) || normalizedRegion === "cundinamarca") {
                 if (hasReservaProduct) {
@@ -110,7 +110,7 @@ app.post('/shipping', (request, response) => {
                     });
                 } else {
                     shippingResults.push({
-                        method: "Envío Municipios Cerca a Bogotá (Envío 21 de abril)",
+                        method: "Envío Municipios Cerca a Bogotá",
                         price: 15000,
                         service_id: 10003,
                         service_name: "Envío Municipios Cerca a Bogotá (24-48 hrs)"
@@ -119,17 +119,17 @@ app.post('/shipping', (request, response) => {
             } else if (barranquillaMonteria.has(normalizedCity)) {
                 if (hasReservaProduct) {
                     shippingResults.push({
-                        method: "Envío producto reserva ",
-                        price: 39000,
+                        method: "Envío producto reserva",
+                        price: 10000,
                         service_id: 10006,
                         service_name: "Enviaremos tu producto cuando esté disponible",
                     });
                 } else {
                     shippingResults.push({
-                        method: "Envío a Barranquilla o Monteria (Envío 21 de abril)",
-                        price: 39000,
+                        method: "Envío a Barranquilla o Cartagena",
+                        price: 10000,
                         service_id: 10005,
-                        service_name: "(72 horas - envios Lunes, Martes y Miercoles)"
+                        service_name: "Envío Barranquilla o Cartagena (24 – 48 Horas)"
                     });
                 }
             } else if (otherRegions.has(normalizedRegion)) {
@@ -142,7 +142,7 @@ app.post('/shipping', (request, response) => {
                     });
                 } else {
                     shippingResults.push({
-                        method: "Envíos fuera de Bogotá (Envío 21 de abril)",
+                        method: "Envíos fuera de Bogotá",
                         price: 39000,
                         service_id: 10004,
                         service_name: "Envíos fuera de Bogotá (48-72 hrs)"
