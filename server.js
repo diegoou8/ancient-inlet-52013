@@ -47,7 +47,6 @@ app.post('/shipping', (request, response) => {
         let hasReservaProduct = false;
         
         let productCities = [];
-
         for (const item of items) {
           const itemOptions = item._embedded?.['fx:item_options'] || [];
           const ciudadOption = itemOptions.find(
@@ -55,17 +54,56 @@ app.post('/shipping', (request, response) => {
           );
       
           if (ciudadOption && ciudadOption.value) {
-            const ciudadValue = normalizeText(ciudadOption.value);
-            productCities.push(ciudadValue);
-            console.log(`Product "${item.name}" has ciudad:`, ciudadValue);
+            const rawValue = normalizeText(ciudadOption.value);
+            // Split by comma or "y"
+            const allowedCities = rawValue
+              .split(/,| y /i)
+              .map((c) => normalizeText(c))
+              .filter((c) => c !== "");
+        
+            productCities.push({ name: item.name, allowedCities });
+            console.log(`Product "${item.name}" allows cities:`, allowedCities);
+        
+            // Case 1: if "todas" → skip restriction
+            if (allowedCities.includes("todas")) {
+              console.log(`Product "${item.name}" allowed for all cities.`);
+              continue;
+            }
+        
+            // Case 2: Bogotá products → valid for all cities except Barranquilla or Cartagena
+            if (allowedCities.includes("bogota")) {
+              if (barranquillaMonteria.has(normalizedCity)) {
+                console.warn(
+                  `Product "${item.name}" not allowed in ${normalizedCity} (Bogotá restriction).`
+                );
+                return response.send({
+                  ok: false,
+                  message: `El producto "${item.name}" no está disponible para ${shipment?.shipping_address?.city || "tu ciudad"}.`,
+                });
+              } else {
+                console.log(`Product "${item.name}" (Bogotá) allowed in ${normalizedCity}.`);
+                continue;
+              }
+            }
+        
+            // Case 3: Other products must explicitly include the selected city
+            if (!allowedCities.includes(normalizedCity)) {
+              console.warn(
+                `Product "${item.name}" not available in ${normalizedCity}.`
+              );
+              return response.send({
+                ok: false,
+                message: `El producto "${item.name}" no está disponible para ${shipment?.shipping_address?.city || "tu ciudad"}.`,
+              });
+            } else {
+              console.log(`Product "${item.name}" available for ${normalizedCity}.`);
+            }
           } else {
             console.warn(`No "ciudad" option found for product "${item.name}".`);
           }
         }
-        
-        console.log("All product cities found:", productCities);
 
-
+        console.log("All product cities processed:", productCities);
         // Check if total item price exceeds threshold
         if (totalItemPrice >= ORDER_TOTAL_THRESHOLD) {
             console.log("Total item price exceeds threshold");
