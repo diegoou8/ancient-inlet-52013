@@ -45,6 +45,26 @@ app.post('/shipping', (request, response) => {
 
         const shippingResults = [];
         let hasReservaProduct = false;
+        
+        let productCities = [];
+
+        for (const item of items) {
+          const itemOptions = item._embedded?.['fx:item_options'] || [];
+          const ciudadOption = itemOptions.find(
+            (opt) => opt.name && normalizeText(opt.name) === "ciudad"
+          );
+      
+          if (ciudadOption && ciudadOption.value) {
+            const ciudadValue = normalizeText(ciudadOption.value);
+            productCities.push(ciudadValue);
+            console.log(`Product "${item.name}" has ciudad:`, ciudadValue);
+          } else {
+            console.warn(`No "ciudad" option found for product "${item.name}".`);
+          }
+        }
+        
+        console.log("All product cities found:", productCities);
+
 
         // Check if total item price exceeds threshold
         if (totalItemPrice >= ORDER_TOTAL_THRESHOLD) {
