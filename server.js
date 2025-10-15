@@ -30,7 +30,7 @@ const reservaProducts = new Set(['Reserva'].map(normalizeText));
 app.post('/shipping', (request, response) => {
     try {
         // Print the entire payload to inspect its structure
-        console.log("Full request payload:", JSON.stringify(request.body, null, 2));
+        // console.log("Full request payload:", JSON.stringify(request.body, null, 2));
 
         const shipment = request.body._embedded?.['fx:shipment'];
         const items = request.body._embedded?.['fx:items'] || [];
