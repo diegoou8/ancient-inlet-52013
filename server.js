@@ -74,6 +74,9 @@ app.post('/shipping', (request, response) => {
         let hasReservaProduct = false;
         
         let productCities = [];
+        // NEW: Flag to track if the shipment should be denied due to product/city conflict
+        let shipmentDeniedByProduct = false; 
+
         for (const item of items) {
           const itemOptions = item._embedded?.['fx:item_options'] || [];
           const ciudadOption = itemOptions.find(
@@ -97,16 +100,15 @@ app.post('/shipping', (request, response) => {
               continue;
             }
         
-            // Case 2: Bogotá products → valid for all cities except Barranquilla or Cartagena
+            // Case 2: Bogotá products (e.g., Charcutería) → valid for all cities except Barranquilla or Cartagena
             if (allowedCities.includes("bogota")) {
               if (barranquillaMonteria.has(normalizedCity)) {
                 console.warn(
                   `Product "${item.name}" not allowed in ${normalizedCity} (Bogotá restriction).`
                 );
-                return response.send({
-                  ok: false,
-                  details: `El producto "${item.name}" no está disponible para ${shipment?.shipping_address?.city || "tu ciudad"}.`,
-                });
+                // *** FIX: Set flag and break the loop, DO NOT return here ***
+                shipmentDeniedByProduct = true;
+                break; 
               } else {
                 console.log(`Product "${item.name}" (Bogotá) allowed in ${normalizedCity}.`);
                 continue;
@@ -118,10 +120,9 @@ app.post('/shipping', (request, response) => {
               console.warn(
                 `Product "${item.name}" not available in ${normalizedCity}.`
               );
-              return response.send({
-                ok: false,
-                details: `El producto "${item.name}" no está disponible para ${shipment?.shipping_address?.city || "tu ciudad"}.`,
-              });
+              // *** FIX: Set flag and break the loop, DO NOT return here ***
+              shipmentDeniedByProduct = true;
+              break; 
             } else {
               console.log(`Product "${item.name}" available for ${normalizedCity}.`);
             }
@@ -131,6 +132,43 @@ app.post('/shipping', (request, response) => {
         }
 
         console.log("All product cities processed:", productCities);
+        
+        // *** NEW BLOCK: Check the denial flag after the loop is complete ***
+        if (shipmentDeniedByProduct) {
+          // Find the name of the restricted item for a better error message (optional, but good UX)
+          const restrictedItem = items.find(item => {
+              // Re-run the check to identify the restricted item
+              const itemOptions = item._embedded?.['fx:item_options'] || [];
+              const ciudadOption = itemOptions.find(opt => opt.name && normalizeText(opt.name) === "ciudad");
+
+              if (ciudadOption && ciudadOption.value) {
+                  const allowedCities = normalizeText(ciudadOption.value)
+                      .split(/,| y /i)
+                      .map((c) => normalizeText(c))
+                      .filter((c) => c !== "");
+
+                  // Restriction Check 1: Bogotá product in Barranquilla/Cartagena
+                  if (allowedCities.includes("bogota") && barranquillaMonteria.has(normalizedCity)) {
+                      return true;
+                  }
+
+                  // Restriction Check 2: City not explicitly included
+                  if (!allowedCities.includes("todas") && !allowedCities.includes(normalizedCity)) {
+                      return true;
+                  }
+              }
+              return false;
+          });
+
+          const deniedProductName = restrictedItem?.name || "un producto en tu carrito";
+          return response.send({
+            ok: false,
+            details: `El producto "${deniedProductName}" no está disponible para ${shipment?.shipping_address?.city || "tu ciudad"}. Por favor, remuévelo para continuar.`,
+          });
+        }
+        // *** END NEW BLOCK ***
+
+
         // Check if total item price exceeds threshold
         if (totalItemPrice >= ORDER_TOTAL_THRESHOLD) {
             console.log("Total item price exceeds threshold");
@@ -154,7 +192,7 @@ app.post('/shipping', (request, response) => {
                 }
             }
 
-            // Shipping logic based on region and "reserva" product - Cambiar a precio normal 8000
+            // Shipping logic based on region and "reserva" product
             if (bogota.has(normalizedCity)) {
                 if (hasReservaProduct) {
                     shippingResults.push({
@@ -165,8 +203,8 @@ app.post('/shipping', (request, response) => {
                     });
                 } else {
                     shippingResults.push({
-                        method: "Envío Gratis  Bogotá",
-                        price: 0,
+                        method: "Envío Bogotá",
+                        price: 8000,
                         service_id: 10001,
                         service_name: "Envío Bogotá (24 – 48 Horas)",
                     });
@@ -212,8 +250,8 @@ app.post('/shipping', (request, response) => {
                     });
                 } else {
                     shippingResults.push({
-                        method: "Envío a Barranquilla o Cartagena Gratis",
-                        price: 0,
+                        method: "Envío a Barranquilla o Cartagena",
+                        price: 10000,
                         service_id: 10005,
                         service_name: "Envío Barranquilla o Cartagena (24 – 48 Horas)"
                     });
@@ -231,7 +269,7 @@ app.post('/shipping', (request, response) => {
                         method: "Envíos fuera de Bogotá",
                         price: 39000,
                         service_id: 10004,
-                        service_name: "Envíos fuera de Bogotá (3–5 días hábiles)"
+                        service_name: "Envíos fuera de Bogotá (48-72 hrs)"
                     });
                 }
             }
