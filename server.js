@@ -197,8 +197,8 @@ app.post('/shipping', (request, response) => {
         });
       } else {
         shippingResults.push({
-          method: 'Envío Bogotá',
-          price: 8000,
+          method: 'Envío Bogotá gratis',
+          price: 0,
           service_id: 10001,
           service_name: 'Envío Bogotá (24 – 48 Horas)',
         });
@@ -255,8 +255,8 @@ app.post('/shipping', (request, response) => {
                 'Enviaremos tu producto cuando esté disponible',
             }
           : {
-              method: 'Envío a Barranquilla o Cartagena',
-              price: 10000,
+              method: 'Envío a Barranquilla o Cartagena gratis',
+              price: 0,
               service_id: 10005,
               service_name:
                 'Envío Barranquilla o Cartagena (24 – 48 Horas)',
