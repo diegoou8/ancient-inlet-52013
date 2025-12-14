@@ -119,7 +119,6 @@ app.post('/shipping', (request, response) => {
     let productCities = [];
     let invalidProductMessage = null;
 
-    // 🔧 VALIDATE ALL ITEMS (no early return)
     for (const item of items) {
       const itemOptions = item._embedded?.['fx:item_options'] || [];
 
@@ -139,36 +138,31 @@ app.post('/shipping', (request, response) => {
         console.log(`Product "${item.name}" allows cities:`, allowedCities);
 
         if (allowedCities.includes('todas')) {
+          console.log(`Product "${item.name}" allowed for all cities.`);
           continue;
         }
 
         if (allowedCities.includes('bogota')) {
           if (barranquillaMonteria.has(normalizedCity)) {
-            if (!invalidProductMessage) {
-              invalidProductMessage = `El producto "${item.name}" no está disponible para ${
+            return response.send({
+              ok: false,
+              details: `El producto "${item.name}" no está disponible para ${
                 shipment?.shipping_address?.city || 'tu ciudad'
-              }.`;
-            }
+              }.`,
+            });
           }
           continue;
         }
 
         if (!allowedCities.includes(normalizedCity)) {
-          if (!invalidProductMessage) {
-            invalidProductMessage = `El producto "${item.name}" no está disponible para ${
+          return response.send({
+            ok: false,
+            details: `El producto "${item.name}" no está disponible para ${
               shipment?.shipping_address?.city || 'tu ciudad'
-            }.`;
-          }
+            }.`,
+          });
         }
       }
-    }
-
-    // 🚫 BLOCK ONCE, AFTER ALL ITEMS ARE CHECKED
-    if (invalidProductMessage) {
-      return response.send({
-        ok: false,
-        details: invalidProductMessage,
-      });
     }
 
     if (totalItemPrice < ORDER_TOTAL_THRESHOLD) {
@@ -179,7 +173,6 @@ app.post('/shipping', (request, response) => {
       });
     }
 
-    // Detect reserva products
     for (let i = 0; i < itemCount; i++) {
       const item = items[i];
 
@@ -195,7 +188,6 @@ app.post('/shipping', (request, response) => {
       }
     }
 
-    // Shipping rules
     if (bogota.has(normalizedCity)) {
       if (hasReservaProduct) {
         shippingResults.push({
@@ -308,4 +300,9 @@ app.post('/shipping', (request, response) => {
     console.error('Error during shipping rate setup:', error);
     response.status(500).send('Error processing request');
   }
+});
+
+const PORT = process.env.PORT || 8016;
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
