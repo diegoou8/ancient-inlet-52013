@@ -21,6 +21,33 @@ const otherRegions = new Set([
     'valle del cauca', 'vaupés', 'vichada'
 ].map(normalizeText));
 
+const COLOMBIAN_HOLIDAYS = new Set([
+  '2025-01-01', // Año Nuevo
+  '2025-01-06', // Reyes Magos
+  '2025-03-24', // San José
+  '2025-04-17', // Jueves Santo
+  '2025-04-18', // Viernes Santo
+  '2025-05-01', // Día del Trabajo
+  '2025-05-26', // Ascensión del Señor
+  '2025-06-16', // Corpus Christi
+  '2025-06-23', // Sagrado Corazón
+  '2025-07-07', // San Pedro y San Pablo
+  '2025-07-20', // Día de la Independencia
+  '2025-08-07', // Batalla de Boyacá
+  '2025-08-18', // Asunción de la Virgen
+  '2025-10-13', // Día de la Raza
+  '2025-11-03', // Todos los Santos
+  '2025-11-17', // Independencia de Cartagena
+  '2025-12-08', // Inmaculada Concepción
+  '2025-12-25', // Navidad
+]);
+
+const isColombianHoliday = () => {
+  const today = new Date();
+  const dateStr = today.toISOString().split('T')[0];
+  return COLOMBIAN_HOLIDAYS.has(dateStr);
+};
+
 // Threshold for order total
 const ORDER_TOTAL_THRESHOLD = 70000;
 
@@ -31,7 +58,7 @@ app.post('/shipping', (request, response) => {
     try {
         // Print the entire payload to inspect its structure
         // console.log("Full request payload:", JSON.stringify(request.body, null, 2));
-
+        const todayIsHoliday = isColombianHoliday();
         const shipment = request.body._embedded?.['fx:shipment'];
         const items = request.body._embedded?.['fx:items'] || [];
         const totalItemPrice = shipment?.total_item_price || 0;
@@ -78,7 +105,7 @@ app.post('/shipping', (request, response) => {
                 );
                 return response.send({
                   ok: false,
-                  message: `El producto "${item.name}" no está disponible para ${shipment?.shipping_address?.city || "tu ciudad"}.`,
+                  details: `El producto "${item.name}" no está disponible para ${shipment?.shipping_address?.city || "tu ciudad"}.`,
                 });
               } else {
                 console.log(`Product "${item.name}" (Bogotá) allowed in ${normalizedCity}.`);
@@ -93,7 +120,7 @@ app.post('/shipping', (request, response) => {
               );
               return response.send({
                 ok: false,
-                message: `El producto "${item.name}" no está disponible para ${shipment?.shipping_address?.city || "tu ciudad"}.`,
+                details: `El producto "${item.name}" no está disponible para ${shipment?.shipping_address?.city || "tu ciudad"}.`,
               });
             } else {
               console.log(`Product "${item.name}" available for ${normalizedCity}.`);
@@ -127,7 +154,7 @@ app.post('/shipping', (request, response) => {
                 }
             }
 
-            // Shipping logic based on region and "reserva" product
+            // Shipping logic based on region and "reserva" product - Cambiar a precio normal 8000
             if (bogota.has(normalizedCity)) {
                 if (hasReservaProduct) {
                     shippingResults.push({
@@ -138,8 +165,8 @@ app.post('/shipping', (request, response) => {
                     });
                 } else {
                     shippingResults.push({
-                        method: "Envío Bogotá",
-                        price: 8000,
+                        method: "Envío Gratis  Bogotá",
+                        price: 0,
                         service_id: 10001,
                         service_name: "Envío Bogotá (24 – 48 Horas)",
                     });
@@ -147,9 +174,10 @@ app.post('/shipping', (request, response) => {
                     const currentHour = new Date().getHours();
                     const currentDay = new Date().getDay();
                     if (
-                        (currentDay >= 1 && currentDay <= 5 && currentHour >= 6 && currentHour < 15) ||
-                        (currentDay === 6 && currentHour >= 6 && currentHour < 11)
-                    ) {
+                          !todayIsHoliday &&
+                          ((currentDay >= 1 && currentDay <= 5 && currentHour >= 6 && currentHour < 15) ||
+                            (currentDay === 6 && currentHour >= 6 && currentHour < 11))
+                        ) {
                         shippingResults.push({
                             method: "Envío Prioritario Bogotá",
                             price: 12000,
@@ -184,8 +212,8 @@ app.post('/shipping', (request, response) => {
                     });
                 } else {
                     shippingResults.push({
-                        method: "Envío a Barranquilla o Cartagena",
-                        price: 10000,
+                        method: "Envío a Barranquilla o Cartagena Gratis",
+                        price: 0,
                         service_id: 10005,
                         service_name: "Envío Barranquilla o Cartagena (24 – 48 Horas)"
                     });
@@ -203,18 +231,18 @@ app.post('/shipping', (request, response) => {
                         method: "Envíos fuera de Bogotá",
                         price: 39000,
                         service_id: 10004,
-                        service_name: "Envíos fuera de Bogotá (48-72 hrs)"
+                        service_name: "Envíos fuera de Bogotá (3–5 días hábiles)"
                     });
                 }
             }
 
             if (shippingResults.length === 0) {
                 console.log("No shipping options available for the location");
-                return response.send({ ok: false, message: "Shipping not available for your location" });
+                return response.send({ ok: false, details: "No hay opciones de envío disponibles para tu ubicación" });
             }
         } else {
             console.log("Total item price does not exceed threshold");
-            return response.send({ ok: false, message: "Total item price must be greater than 70,000 to view shipping options" });
+            return response.send({ ok: false, details: "El precio total debe ser mayor a 70,000 para ver las opciones de envío" });
         }
 
         response.setHeader("Content-Type", "application/json");
@@ -226,8 +254,8 @@ app.post('/shipping', (request, response) => {
     }
 });
 
-// Use correct port for Heroku
-const PORT = process.env.PORT || 6000;
+
+const PORT = process.env.PORT || 8016;
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
