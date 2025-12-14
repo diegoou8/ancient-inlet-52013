@@ -117,9 +117,13 @@ app.post('/shipping', (request, response) => {
     const shippingResults = [];
     let hasReservaProduct = false;
     let productCities = [];
-    let invalidProductMessage = null;
+    // This variable will now hold the denial message if a restricted product is found.
+    let invalidProductMessage = null; 
 
     for (const item of items) {
+      // If a restricted product has already been found, we can skip checking subsequent items.
+      if (invalidProductMessage) break;
+
       const itemOptions = item._embedded?.['fx:item_options'] || [];
 
       const ciudadOption = itemOptions.find(
@@ -144,26 +148,33 @@ app.post('/shipping', (request, response) => {
 
         if (allowedCities.includes('bogota')) {
           if (barranquillaMonteria.has(normalizedCity)) {
-            return response.send({
-              ok: false,
-              details: `El producto "${item.name}" no está disponible para ${
+            // FIX: Store the denial message and break the loop
+            invalidProductMessage = `El producto "${item.name}" no está disponible para ${
                 shipment?.shipping_address?.city || 'tu ciudad'
-              }.`,
-            });
+            }.`;
+            break; // Exit the loop to stop checking other items
           }
           continue;
         }
 
         if (!allowedCities.includes(normalizedCity)) {
-          return response.send({
-            ok: false,
-            details: `El producto "${item.name}" no está disponible para ${
-              shipment?.shipping_address?.city || 'tu ciudad'
-            }.`,
-          });
+           // FIX: Store the denial message and break the loop
+           invalidProductMessage = `El producto "${item.name}" no está disponible para ${
+               shipment?.shipping_address?.city || 'tu ciudad'
+           }.`;
+           break; // Exit the loop to stop checking other items
         }
       }
     }
+    
+    // NEW CHECK: Evaluate the flag after the loop is complete
+    if (invalidProductMessage) {
+        return response.send({
+            ok: false,
+            details: invalidProductMessage,
+        });
+    }
+    // END NEW CHECK
 
     if (totalItemPrice < ORDER_TOTAL_THRESHOLD) {
       return response.send({
