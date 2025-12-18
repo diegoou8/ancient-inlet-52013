@@ -139,18 +139,23 @@ app.post('/shipping', (request, response) => {
     );
 
     const itemCount = shipment?.item_count || 0;
+    console.log(`--- Shipping Request ---`);
+    console.log(`Raw City: "${shipment?.shipping_address?.city || shipment?.city || ''}"`);
+    console.log(`Normalized City: "${normalizedCity}"`);
+    console.log(`Restricted Cities:`, Array.from(barranquillaMonteria));
+    console.log(`Is city in restricted set? ${barranquillaMonteria.has(normalizedCity)}`);
 
     const shippingResults = [];
     let hasReservaProduct = false;
     let productCities = [];
-    // This variable will now hold the denial message if a restricted product is found.
     let invalidProductMessage = null;
 
     for (const item of items) {
       if (invalidProductMessage) break;
 
       const itemOptions = item._embedded?.['fx:item_options'] || [];
-      console.log(`Processing item: "${item.name}" with ${itemOptions.length} options`);
+      const itemCategory = item._embedded?.['fx:item_category']?.name || 'N/A';
+      console.log(`Processing item: "${item.name}", category: "${itemCategory}", options: ${itemOptions.length}`);
 
       const ciudadOption = itemOptions.find(
         (opt) => opt.name && normalizeText(opt.name) === 'ciudad'
