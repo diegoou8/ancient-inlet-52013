@@ -105,7 +105,7 @@ const isColombianHoliday = () => {
 const ORDER_TOTAL_THRESHOLD = 70000;
 
 // Define product names for which "Envio reserva" applies
-const reservaProducts = new Set(['Reserva', 'Charcuteria'].map(normalizeText));
+const reservaProducts = new Set(['Reserva'].map(normalizeText));
 
 // Helper to find the "ciudad" parameter in various possible locations
 const findCiudadValue = (item, normalizedShipmentCity) => {
