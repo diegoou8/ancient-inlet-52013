@@ -139,13 +139,11 @@ app.post('/shipping', (request, response) => {
     );
 
     const itemCount = shipment?.item_count || 0;
-    console.log(`--- Shipping Request DEBUG ---`);
-    console.log(`Request Body Keys:`, Object.keys(request.body));
-    console.log(`First Item Structure:`, JSON.stringify(items[0]).substring(0, 1000));
-    console.log(`Raw City: "${shipment?.shipping_address?.city || shipment?.city || ''}"`);
-    console.log(`Normalized City: "${normalizedCity}"`);
-    console.log(`Restricted Cities:`, Array.from(barranquillaMonteria));
-    console.log(`Is city in restricted set? ${barranquillaMonteria.has(normalizedCity)}`);
+
+    // Log the full payload for analysis
+    console.log('--- FULL REQUEST BODY ---');
+    console.log(JSON.stringify(request.body, null, 2));
+    console.log('--- END FULL REQUEST BODY ---');
 
     const shippingResults = [];
     let hasReservaProduct = false;
@@ -158,9 +156,6 @@ app.post('/shipping', (request, response) => {
       const itemOptions = item._embedded?.['fx:item_options'] || [];
       const itemCategory = item._embedded?.['fx:item_category']?.name || 'N/A';
       const itemAttributes = item._embedded?.['fx:attributes'] || [];
-      console.log(`Processing item: "${item.name}", category: "${itemCategory}", options: ${itemOptions.length}, attributes: ${itemAttributes.length}`);
-      if (item.ciudad) console.log(`Item has root-level "ciudad": "${item.ciudad}"`);
-      if (item.city) console.log(`Item has root-level "city": "${item.city}"`);
 
       const ciudadOption = itemOptions.find(
         (opt) => opt.name && normalizeText(opt.name) === 'ciudad'
