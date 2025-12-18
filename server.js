@@ -150,6 +150,8 @@ app.post('/shipping', (request, response) => {
       if (invalidProductMessage) break;
 
       const itemOptions = item._embedded?.['fx:item_options'] || [];
+      console.log(`Processing item: "${item.name}" with ${itemOptions.length} options`);
+
       const ciudadOption = itemOptions.find(
         (opt) => opt.name && normalizeText(opt.name) === 'ciudad'
       );
