@@ -6,7 +6,8 @@ const normalizeText = (text) =>
   text
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
+    .toLowerCase()
+    .trim();
 
 const app = express();
 app.use(bodyParser.json());
@@ -15,7 +16,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Shipping Groups with normalized city/region names (lowercase, no accents)
 const bogota = new Set(
   [
-    'bogota','bogotá','bogotá, d.c.','bogotá d.c', 'bogota dc.', 'bogota d.c', 'bogota dc', 'bogota ','bogotá d,c.','bogotá, d.c. ','bogotá d,c,','bogotá d,c. ','bogota,d.c','bogotáD.C','bogotá, DC',].map(normalizeText)
+    'bogota', 'bogotá', 'bogotá, d.c.', 'bogotá d.c', 'bogota dc.', 'bogota d.c', 'bogota dc', 'bogota ', 'bogotá d,c.', 'bogotá, d.c. ', 'bogotá d,c,', 'bogotá d,c. ', 'bogota,d.c', 'bogotáD.C', 'bogotá, DC',].map(normalizeText)
 );
 
 const nearBogota = new Set(
@@ -88,6 +89,16 @@ const COLOMBIAN_HOLIDAYS = new Set([
 const isColombianHoliday = () => {
   const today = new Date();
   const dateStr = today.toISOString().split('T')[0];
+
+  // Vacation block: Dec 27 to Jan 13
+  const month = today.getMonth() + 1; // getMonth is 0-indexed
+  const day = today.getDate();
+
+  // Condition for Dec 27 - Dec 31
+  if (month === 12 && day >= 27) return true;
+  // Condition for Jan 1 - Jan 13
+  if (month === 1 && day <= 13) return true;
+
   return COLOMBIAN_HOLIDAYS.has(dateStr);
 };
 
@@ -100,6 +111,21 @@ const reservaProducts = new Set(['Reserva'].map(normalizeText));
 app.post('/shipping', (request, response) => {
   try {
     const todayIsHoliday = isColombianHoliday();
+    if (todayIsHoliday) {
+      // If it's the vacation period or a specific holiday where we don't ship
+      // Note: the original code just checked for holidays but didn't block ALL shipments on holidays globally, 
+      // but the user specifically asked for blocking from Dec 27 to Jan 13.
+      // I will implement a block if it's within that range.
+      const today = new Date();
+      const month = today.getMonth() + 1;
+      const day = today.getDate();
+      if ((month === 12 && day >= 27) || (month === 1 && day <= 13)) {
+        return response.send({
+          ok: false,
+          details: 'Maestri Milano se encuentra en vacaciones colectivas. No se permiten pedidos del 27 de diciembre al 13 de enero.',
+        });
+      }
+    }
     const shipment = request.body._embedded?.['fx:shipment'];
     const items = request.body._embedded?.['fx:items'] || [];
     const totalItemPrice = shipment?.total_item_price || 0;
@@ -118,21 +144,18 @@ app.post('/shipping', (request, response) => {
     let hasReservaProduct = false;
     let productCities = [];
     // This variable will now hold the denial message if a restricted product is found.
-    let invalidProductMessage = null; 
+    let invalidProductMessage = null;
 
     for (const item of items) {
-      // If a restricted product has already been found, we can skip checking subsequent items.
       if (invalidProductMessage) break;
 
       const itemOptions = item._embedded?.['fx:item_options'] || [];
-
       const ciudadOption = itemOptions.find(
         (opt) => opt.name && normalizeText(opt.name) === 'ciudad'
       );
 
       if (ciudadOption && ciudadOption.value) {
         const rawValue = normalizeText(ciudadOption.value);
-
         const allowedCities = rawValue
           .split(/,| y /i)
           .map((c) => normalizeText(c))
@@ -142,37 +165,37 @@ app.post('/shipping', (request, response) => {
         console.log(`Product "${item.name}" allows cities:`, allowedCities);
 
         if (allowedCities.includes('todas')) {
-          console.log(`Product "${item.name}" allowed for all cities.`);
           continue;
         }
 
+        // Requirement: If allowed in Bogota, also allowed in Medellin (and cities not in Barranquilla/Cartagena group)
         if (allowedCities.includes('bogota')) {
           if (barranquillaMonteria.has(normalizedCity)) {
-            // FIX: Store the denial message and break the loop
-            invalidProductMessage = `El producto "${item.name}" no está disponible para ${
-                shipment?.shipping_address?.city || 'tu ciudad'
-            }.`;
-            break; // Exit the loop to stop checking other items
+            invalidProductMessage = `El producto "${item.name}" no está disponible para ${shipment?.shipping_address?.city || 'tu ciudad'
+              }.`;
+            break;
           }
           continue;
         }
 
-        if (!allowedCities.includes(normalizedCity)) {
-           // FIX: Store the denial message and break the loop
-           invalidProductMessage = `El producto "${item.name}" no está disponible para ${
-               shipment?.shipping_address?.city || 'tu ciudad'
-           }.`;
-           break; // Exit the loop to stop checking other items
+        // Direct city match
+        if (allowedCities.includes(normalizedCity)) {
+          continue;
         }
+
+        // If none of the above conditions met, then it's invalid
+        invalidProductMessage = `El producto "${item.name}" no está disponible para ${shipment?.shipping_address?.city || 'tu ciudad'
+          }.`;
+        break;
       }
     }
-    
+
     // NEW CHECK: Evaluate the flag after the loop is complete
     if (invalidProductMessage) {
-        return response.send({
-            ok: false,
-            details: invalidProductMessage,
-        });
+      return response.send({
+        ok: false,
+        details: invalidProductMessage,
+      });
     }
     // END NEW CHECK
 
@@ -242,55 +265,55 @@ app.post('/shipping', (request, response) => {
       shippingResults.push(
         hasReservaProduct
           ? {
-              method: 'Envío producto reserva',
-              price: 15000,
-              service_id: 10006,
-              service_name:
-                'Enviaremos tu producto cuando esté disponible',
-            }
+            method: 'Envío producto reserva',
+            price: 15000,
+            service_id: 10006,
+            service_name:
+              'Enviaremos tu producto cuando esté disponible',
+          }
           : {
-              method: 'Envío Municipios Cerca a Bogotá',
-              price: 15000,
-              service_id: 10003,
-              service_name:
-                'Envío Municipios Cerca a Bogotá (24-48 hrs)',
-            }
+            method: 'Envío Municipios Cerca a Bogotá',
+            price: 15000,
+            service_id: 10003,
+            service_name:
+              'Envío Municipios Cerca a Bogotá (24-48 hrs)',
+          }
       );
     } else if (barranquillaMonteria.has(normalizedCity)) {
       shippingResults.push(
         hasReservaProduct
           ? {
-              method: 'Envío producto reserva',
-              price: 10000,
-              service_id: 10006,
-              service_name:
-                'Enviaremos tu producto cuando esté disponible',
-            }
+            method: 'Envío producto reserva',
+            price: 10000,
+            service_id: 10006,
+            service_name:
+              'Enviaremos tu producto cuando esté disponible',
+          }
           : {
-              method: 'Envío a Barranquilla o Cartagena gratis',
-              price: 0,
-              service_id: 10005,
-              service_name:
-                'Envío Barranquilla o Cartagena (24 – 48 Horas)',
-            }
+            method: 'Envío a Barranquilla o Cartagena gratis',
+            price: 0,
+            service_id: 10005,
+            service_name:
+              'Envío Barranquilla o Cartagena (24 – 48 Horas)',
+          }
       );
     } else if (otherRegions.has(normalizedRegion)) {
       shippingResults.push(
         hasReservaProduct
           ? {
-              method: 'Envío producto reserva',
-              price: 39000,
-              service_id: 10006,
-              service_name:
-                'Enviaremos tu producto cuando esté disponible',
-            }
+            method: 'Envío producto reserva',
+            price: 39000,
+            service_id: 10006,
+            service_name:
+              'Enviaremos tu producto cuando esté disponible',
+          }
           : {
-              method: 'Envíos fuera de Bogotá',
-              price: 39000,
-              service_id: 10004,
-              service_name:
-                'Envíos fuera de Bogotá (48-72 hrs)',
-            }
+            method: 'Envíos fuera de Bogotá',
+            price: 39000,
+            service_id: 10004,
+            service_name:
+              'Envíos fuera de Bogotá (48-72 hrs)',
+          }
       );
     }
 
