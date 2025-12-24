@@ -84,7 +84,7 @@ const COLOMBIAN_HOLIDAYS = new Set([
   '2025-01-01', '2025-01-06', '2025-03-24', '2025-04-17', '2025-04-18',
   '2025-05-01', '2025-05-26', '2025-06-16', '2025-06-23', '2025-07-07',
   '2025-07-20', '2025-08-07', '2025-08-18', '2025-10-13', '2025-11-03',
-  '2025-11-17', '2025-12-08', '2025-12-25',
+  '2025-11-17', '2025-12-08', '2025-12-25', '2025-12-31',
 ]);
 
 const isColombianHoliday = () => {
@@ -233,8 +233,8 @@ app.post('/shipping', (request, response) => {
         });
       } else {
         shippingResults.push({
-          method: 'Envío Bogotá gratis',
-          price: 0,
+          method: 'Envío Bogotá',
+          price: 8000,
           service_id: 10001,
           service_name: 'Envío Bogotá (24 – 48 Horas)',
         });
@@ -242,8 +242,9 @@ app.post('/shipping', (request, response) => {
         const currentHour = new Date().getHours();
         const currentDay = new Date().getDay();
         if (
-          (currentDay >= 1 && currentDay <= 5 && currentHour >= 6 && currentHour < 15) ||
-          (currentDay === 6 && currentHour >= 6 && currentHour < 11)
+          !todayIsHoliday &&
+          ((currentDay >= 1 && currentDay <= 5 && currentHour >= 6 && currentHour < 12) ||
+            (currentDay === 6 && currentHour >= 6 && currentHour < 11))
         ) {
           shippingResults.push({
             method: 'Envío Prioritario Bogotá',
@@ -262,8 +263,8 @@ app.post('/shipping', (request, response) => {
       });
     } else if (barranquillaMonteria.has(normalizedCity)) {
       shippingResults.push({
-        method: hasReservaProduct ? 'Envío producto reserva' : 'Envío a Barranquilla o Cartagena gratis',
-        price: 0,
+        method: hasReservaProduct ? 'Envío producto reserva' : 'Envío a Barranquilla o Cartagena',
+        price: 10000,
         service_id: hasReservaProduct ? 10006 : 10005,
         service_name: hasReservaProduct ? 'Enviaremos tu producto cuando esté disponible' : 'Envío Barranquilla o Cartagena (24 – 48 Horas)',
       });
