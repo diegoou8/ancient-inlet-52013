@@ -87,16 +87,29 @@ const COLOMBIAN_HOLIDAYS = new Set([
   '2025-11-17', '2025-12-08', '2025-12-25', '2025-12-31',
 ]);
 
+const getBogotaTime = () => {
+  const now = new Date();
+  const timeZone = 'America/Bogota';
+  // Create a date object that "looks" like the time in Bogota
+  const bogotaDate = new Date(now.toLocaleString('en-US', { timeZone }));
+  const dateStr = now.toLocaleDateString('en-CA', { timeZone }); // YYYY-MM-DD format
+
+  return {
+    fullDate: bogotaDate,
+    dateStr,
+    hour: parseInt(now.toLocaleTimeString('en-US', { timeZone, hour12: false, hour: 'numeric' })),
+    day: bogotaDate.getDay(),
+    month: bogotaDate.getMonth() + 1, // 1-12
+    date: bogotaDate.getDate()
+  };
+};
+
 const isColombianHoliday = () => {
-  const today = new Date();
-  const dateStr = today.toISOString().split('T')[0];
+  const { dateStr, month, date } = getBogotaTime();
 
-  // Vacation block: Dec 27 to Jan 13
-  const month = today.getMonth() + 1; // getMonth is 0-indexed
-  const day = today.getDate();
-
-  if (month === 12 && day >= 27) return true;
-  if (month === 1 && day <= 13) return true;
+  // Maestri Vacation block: Dec 27 to Jan 13
+  if (month === 12 && date >= 27) return true;
+  if (month === 1 && date <= 13) return true;
 
   return COLOMBIAN_HOLIDAYS.has(dateStr);
 };
@@ -143,10 +156,8 @@ app.post('/shipping', (request, response) => {
   try {
     const todayIsHoliday = isColombianHoliday();
     if (todayIsHoliday) {
-      const today = new Date();
-      const month = today.getMonth() + 1;
-      const day = today.getDate();
-      if ((month === 12 && day >= 27) || (month === 1 && day <= 13)) {
+      const { month, date } = getBogotaTime();
+      if ((month === 12 && date >= 27) || (month === 1 && date <= 13)) {
         return response.send({
           ok: false,
           details: "Maestri Milano se encuentra en vacaciones colectivas. No se permiten pedidos del 27 de diciembre al 13 de enero.",
@@ -239,8 +250,8 @@ app.post('/shipping', (request, response) => {
           service_name: 'Envío Bogotá (24 – 48 Horas)',
         });
 
-        const currentHour = new Date().getHours();
-        const currentDay = new Date().getDay();
+        const { hour: currentHour, day: currentDay } = getBogotaTime();
+
         if (
           !todayIsHoliday &&
           ((currentDay >= 1 && currentDay <= 5 && currentHour >= 6 && currentHour < 12) ||
@@ -273,7 +284,7 @@ app.post('/shipping', (request, response) => {
         method: hasReservaProduct ? 'Envío producto reserva' : 'Envíos fuera de Bogotá',
         price: 39000,
         service_id: hasReservaProduct ? 10006 : 10004,
-        service_name: hasReservaProduct ? 'Enviaremos tu producto cuando esté disponible' : 'Envíos fuera de Bogotá (48-72 hrs)',
+        service_name: hasReservaProduct ? 'Enviaremos tu producto cuando esté disponible' : 'Envíos fuera de Bogotá (5 días hábiles)',
       });
     }
 
